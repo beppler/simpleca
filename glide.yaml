@@ -1,3 +1,3 @@
-package: git.mps.com.br/carlos.beppler/simpleca
+package: go.mps.com.br/carlos.beppler/simpleca
 import:
 - package: gopkg.in/urfave/cli.v1
