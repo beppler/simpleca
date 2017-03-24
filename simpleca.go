@@ -248,6 +248,46 @@ func main() {
 					},
 					Action: signServer,
 				},
+				{
+					Name:  "user",
+					Usage: "Sign a user certificate request",
+					Flags: []cli.Flag{
+						cli.StringFlag{
+							Name:  "csr",
+							Usage: "Certificate request file `NAME`",
+						},
+						cli.StringFlag{
+							Name:  "ca-cert",
+							Usage: "Certificate authority certificate file `NAME`",
+						},
+						cli.StringFlag{
+							Name:  "ca-key",
+							Usage: "Certificare authority RSA private key file `NAME`",
+						},
+						cli.StringFlag{
+							Name:  "ca-key-password",
+							Usage: "private key `PASSWORD`",
+						},
+						cli.StringSliceFlag{
+							Name:  "crl",
+							Usage: "CRL distribution points `URI` for certificate",
+						},
+						cli.StringSliceFlag{
+							Name:  "ocsp",
+							Usage: "OCSP servers `URI` for certificate",
+						},
+						cli.IntFlag{
+							Name:  "validity",
+							Usage: "Validity time in `YEARS`",
+							Value: 2,
+						},
+						cli.StringFlag{
+							Name:  "out",
+							Usage: "Server certificate output file `NAME`",
+						},
+					},
+					Action: signUser,
+				},
 			},
 		},
 	}
@@ -743,6 +783,9 @@ func signRequest(c *cli.Context, configure func(*x509.Certificate) error) error 
 	if len(request.IPAddresses) != 0 {
 		template.IPAddresses = request.IPAddresses
 	}
+	if len(request.EmailAddresses) != 0 {
+		template.EmailAddresses = request.EmailAddresses
+	}
 	if len(crls) != 0 {
 		template.CRLDistributionPoints = crls
 	} else if len(caCert.CRLDistributionPoints) != 0 {
@@ -812,6 +855,26 @@ func signServer(c *cli.Context) error {
 		template.NotAfter = template.NotBefore.AddDate(validity, 0, 0)
 		template.KeyUsage = x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature | x509.KeyUsageKeyAgreement
 		template.ExtKeyUsage = []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}
+		return nil
+	}
+
+	if err := signRequest(c, configure); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func signUser(c *cli.Context) error {
+	validity := c.Int("validity")
+	if validity < 1 {
+		return fmt.Errorf("validity must be a positive number")
+	}
+
+	configure := func(template *x509.Certificate) error {
+		template.NotAfter = template.NotBefore.AddDate(validity, 0, 0)
+		template.KeyUsage = x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment | x509.KeyUsageContentCommitment
+		template.ExtKeyUsage = []x509.ExtKeyUsage{x509.ExtKeyUsageEmailProtection, x509.ExtKeyUsageClientAuth}
 		return nil
 	}
 
