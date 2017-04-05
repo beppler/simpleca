@@ -13,6 +13,8 @@ import (
 	"math/big"
 	"net"
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"gopkg.in/urfave/cli.v1"
@@ -744,6 +746,23 @@ func signRequest(c *cli.Context, configure func(*x509.Certificate) error) error 
 	caKey, err := x509.ParsePKCS1PrivateKey(keyBytes)
 	if err != nil {
 		return fmt.Errorf("failed to parse certificate authority private key: %s", err)
+	}
+
+	crlsName := strings.TrimSuffix(caKeyName, filepath.Ext(caKeyName)) + ".crls.txt"
+	if file, err := os.Open(crlsName); err == nil {
+		scanner := bufio.NewScanner(file)
+		for scanner.Scan() {
+			crls = append(crls, scanner.Text())
+		}
+		file.Close()
+	}
+
+	ocspsName := strings.TrimSuffix(caKeyName, filepath.Ext(caKeyName)) + ".ocsps.txt"
+	if file, err := os.Open(ocspsName); err == nil {
+		scanner := bufio.NewScanner(file)
+		for scanner.Scan() {
+			ocsps = append(ocsps, scanner.Text())
+		}
 	}
 
 	serialNumber := big.NewInt(time.Now().UnixNano())
