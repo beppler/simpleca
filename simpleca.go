@@ -874,7 +874,7 @@ func signUser(c *cli.Context) error {
 	configure := func(template *x509.Certificate) error {
 		template.NotAfter = template.NotBefore.AddDate(validity, 0, 0)
 		template.KeyUsage = x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment | x509.KeyUsageContentCommitment
-		template.ExtKeyUsage = []x509.ExtKeyUsage{x509.ExtKeyUsageEmailProtection, x509.ExtKeyUsageClientAuth}
+		template.ExtKeyUsage = []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageEmailProtection}
 		return nil
 	}
 
