@@ -539,10 +539,6 @@ func genCRL(c *cli.Context) error {
 	if caCertName == "" {
 		return fmt.Errorf("certificate authority certificate file name is required")
 	}
-	caKeyName := c.String("ca-key")
-	if caKeyName == "" {
-		return fmt.Errorf("certificate authority private key file name is required")
-	}
 	validity := c.Int("validity")
 	if validity < 0 {
 		return fmt.Errorf("validity must be a positive number")
@@ -551,8 +547,12 @@ func genCRL(c *cli.Context) error {
 	if outFileName == "" {
 		return fmt.Errorf("output file name is required")
 	}
-	certNames := c.StringSlice("cert")
+	caKeyName := c.String("ca-key")
+	if caKeyName == "" {
+		caKeyName = strings.TrimSuffix(caCertName, filepath.Ext(caCertName)) + ".key"
+	}
 	caPassword := c.String("ca-key-password")
+	certNames := c.StringSlice("cert")
 
 	pemBytes, err := ioutil.ReadFile(caCertName)
 	if err != nil {
@@ -677,13 +677,13 @@ func signRequest(c *cli.Context, configure func(*x509.Certificate) error) error 
 	if caCertName == "" {
 		return fmt.Errorf("certificate authority certificate file name is required")
 	}
-	caKeyName := c.String("ca-key")
-	if caKeyName == "" {
-		return fmt.Errorf("certificate authority private key file name is required")
-	}
 	outName := c.String("out")
 	if outName == "" {
 		return fmt.Errorf("output file name is required")
+	}
+	caKeyName := c.String("ca-key")
+	if caKeyName == "" {
+		caKeyName = strings.TrimSuffix(caCertName, filepath.Ext(caCertName)) + ".key"
 	}
 	caPassword := c.String("ca-key-password")
 	crls := c.StringSlice("crl")
