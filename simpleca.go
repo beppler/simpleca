@@ -854,6 +854,9 @@ func signCode(c *cli.Context) error {
 		template.NotAfter = template.NotBefore.AddDate(validity, 0, 0)
 		template.KeyUsage = x509.KeyUsageDigitalSignature
 		template.ExtKeyUsage = []x509.ExtKeyUsage{x509.ExtKeyUsageCodeSigning}
+		template.DNSNames = nil
+		template.IPAddresses = nil
+		template.EmailAddresses = nil
 		return nil
 	}
 
@@ -874,6 +877,10 @@ func signServer(c *cli.Context) error {
 		template.NotAfter = template.NotBefore.AddDate(validity, 0, 0)
 		template.KeyUsage = x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature | x509.KeyUsageKeyAgreement
 		template.ExtKeyUsage = []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}
+		template.EmailAddresses = nil
+		if len(template.DNSNames) == 0 {
+			template.DNSNames = []string{template.Subject.CommonName}
+		}
 		return nil
 	}
 
@@ -894,6 +901,8 @@ func signUser(c *cli.Context) error {
 		template.NotAfter = template.NotBefore.AddDate(validity, 0, 0)
 		template.KeyUsage = x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment | x509.KeyUsageContentCommitment
 		template.ExtKeyUsage = []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageEmailProtection}
+		template.DNSNames = nil
+		template.IPAddresses = nil
 		return nil
 	}
 
