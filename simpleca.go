@@ -171,6 +171,51 @@ func main() {
 			Usage: "Sign a certificate request",
 			Subcommands: []cli.Command{
 				{
+					Name:  "ca",
+					Usage: "Sign a subordinate certificate authority request",
+					Flags: []cli.Flag{
+						cli.StringFlag{
+							Name:  "csr",
+							Usage: "Certificate request file `NAME`",
+						},
+						cli.StringFlag{
+							Name:  "ca-cert",
+							Usage: "Certificate authority certificate file `NAME`",
+						},
+						cli.StringFlag{
+							Name:  "ca-key",
+							Usage: "Certificare authority RSA private key file `NAME`",
+						},
+						cli.StringFlag{
+							Name:  "ca-key-password",
+							Usage: "private key `PASSWORD`",
+						},
+						cli.StringSliceFlag{
+							Name:  "crl",
+							Usage: "CRL distribution points `URI` for certificate",
+						},
+						cli.StringSliceFlag{
+							Name:  "ocsp",
+							Usage: "OCSP servers `URI` for certificate",
+						},
+						cli.IntFlag{
+							Name:  "max-path-len",
+							Usage: "Maximum number of subordinate CAs",
+							Value: 0,
+						},
+						cli.IntFlag{
+							Name:  "validity",
+							Usage: "Validity time in `YEARS`",
+							Value: 5,
+						},
+						cli.StringFlag{
+							Name:  "out",
+							Usage: "Server certificate output file `NAME`",
+						},
+					},
+					Action: signCA,
+				},
+				{
 					Name:  "code",
 					Usage: "Sign a code signing certificate request",
 					Flags: []cli.Flag{
@@ -839,6 +884,36 @@ func signRequest(c *cli.Context, configure func(*x509.Certificate) error) error 
 	err = ioutil.WriteFile(outName, outBuffer.Bytes(), 0644)
 	if err != nil {
 		return fmt.Errorf("failed to save certificate: %s", err)
+	}
+
+	return nil
+}
+
+func signCA(c *cli.Context) error {
+	maxPathLen := c.Int("max-path-len")
+	if maxPathLen < 0 {
+		return fmt.Errorf("path length must be equal or greater than 0")
+	}
+	validity := c.Int("validity")
+	if validity < 1 {
+		return fmt.Errorf("validity must be a positive number")
+	}
+
+	configure := func(template *x509.Certificate) error {
+		template.IsCA = true
+		template.MaxPathLen = maxPathLen
+		template.MaxPathLenZero = maxPathLen == 0
+		template.BasicConstraintsValid = true
+		template.NotAfter = template.NotBefore.AddDate(validity, 0, 0)
+		template.KeyUsage = x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign | x509.KeyUsageCRLSign
+		template.DNSNames = nil
+		template.IPAddresses = nil
+		template.EmailAddresses = nil
+		return nil
+	}
+
+	if err := signRequest(c, configure); err != nil {
+		return err
 	}
 
 	return nil
