@@ -349,7 +349,7 @@ func main() {
 func genKey(c *cli.Context) error {
 	size := c.Int("size")
 	if size < 1024 {
-		return fmt.Errorf("key size must be greater than 1024 bits")
+		return fmt.Errorf("key size must be at least 1024 bits")
 	}
 	outFileName := c.String("out")
 	if outFileName == "" {
