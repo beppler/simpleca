@@ -912,11 +912,7 @@ func signCA(c *cli.Context) error {
 		return nil
 	}
 
-	if err := signRequest(c, configure); err != nil {
-		return err
-	}
-
-	return nil
+	return signRequest(c, configure)
 }
 
 func signCode(c *cli.Context) error {
@@ -935,11 +931,7 @@ func signCode(c *cli.Context) error {
 		return nil
 	}
 
-	if err := signRequest(c, configure); err != nil {
-		return err
-	}
-
-	return nil
+	return signRequest(c, configure)
 }
 
 func signServer(c *cli.Context) error {
@@ -959,11 +951,7 @@ func signServer(c *cli.Context) error {
 		return nil
 	}
 
-	if err := signRequest(c, configure); err != nil {
-		return err
-	}
-
-	return nil
+	return signRequest(c, configure)
 }
 
 func signUser(c *cli.Context) error {
@@ -981,9 +969,5 @@ func signUser(c *cli.Context) error {
 		return nil
 	}
 
-	if err := signRequest(c, configure); err != nil {
-		return err
-	}
-
-	return nil
+	return signRequest(c, configure)
 }
