@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/urfave/cli"
+	pkcs12 "software.sslmate.com/src/go-pkcs12"
 )
 
 func main() {
@@ -165,6 +166,39 @@ func main() {
 				},
 			},
 			Action: genKey,
+		},
+		{
+			Name:  "pkcs",
+			Usage: "PCKS12 support",
+			Subcommands: []cli.Command{
+				{
+					Name:  "encode",
+					Usage: "Encode a PKCS12 file from certificate and private key",
+					Flags: []cli.Flag{
+						cli.StringFlag{
+							Name:  "cert",
+							Usage: "Certificate file `NAME`",
+						},
+						cli.StringFlag{
+							Name:  "key",
+							Usage: "Private key file `NAME`",
+						},
+						cli.StringFlag{
+							Name:  "password",
+							Usage: "Private key `PASSWORD`",
+						},
+						cli.StringSliceFlag{
+							Name:  "ca-cert",
+							Usage: "Certificate authorities certificate file `NAME`",
+						},
+						cli.StringFlag{
+							Name:  "out",
+							Usage: "PKCS12 output file `NAME`",
+						},
+					},
+					Action: genPkcs,
+				},
+			},
 		},
 		{
 			Name:  "sign",
@@ -708,6 +742,93 @@ func genCRL(c *cli.Context) error {
 	err = ioutil.WriteFile(outFileName, outBuffer.Bytes(), 0644)
 	if err != nil {
 		return fmt.Errorf("failed to save certificate revogation list: %s", err)
+	}
+
+	return nil
+}
+
+func genPkcs(c *cli.Context) error {
+	certName := c.String("cert")
+	if certName == "" {
+		return fmt.Errorf("certificate file name is required")
+	}
+	keyName := c.String("key")
+	if keyName == "" {
+		return fmt.Errorf("private key name is required")
+	}
+	password := c.String("password")
+	caCertNames := c.StringSlice("ca-cert")
+	outName := c.String("out")
+	if outName == "" {
+		return fmt.Errorf("output file name is required")
+	}
+
+	certPemBytes, err := ioutil.ReadFile(certName)
+	if err != nil {
+		return fmt.Errorf("failed to load certificate: %s", err)
+	}
+
+	certPemBlock, _ := pem.Decode(certPemBytes)
+	if certPemBlock == nil {
+		return fmt.Errorf("failed to decode certificate")
+	}
+
+	cert, err := x509.ParseCertificate(certPemBlock.Bytes)
+	if err != nil {
+		return fmt.Errorf("failed to parse certificate : %s", err)
+	}
+
+	keyPemBytes, err := ioutil.ReadFile(keyName)
+	if err != nil {
+		return fmt.Errorf("failed to load private key: %s", err)
+	}
+
+	keyPemBlock, _ := pem.Decode(keyPemBytes)
+	if keyPemBlock == nil {
+		return fmt.Errorf("failed to decode private key")
+	}
+
+	var keyBytes []byte
+	if len(password) == 0 {
+		keyBytes = keyPemBlock.Bytes
+	} else {
+		keyBytes, err = x509.DecryptPEMBlock(keyPemBlock, []byte(password))
+		if err != nil {
+			return fmt.Errorf("failed to decrypt certificate authority private key: %s", err)
+		}
+	}
+
+	key, err := x509.ParsePKCS1PrivateKey(keyBytes)
+	if err != nil {
+		return fmt.Errorf("failed to parse certificate authority private key: %s", err)
+	}
+
+	var caCerts []*x509.Certificate
+
+	for _, certName := range caCertNames {
+		pemBytes, err := ioutil.ReadFile(certName)
+		if err != nil {
+			return fmt.Errorf("failed to load certificate: %s", err)
+		}
+		pemBlock, _ := pem.Decode(pemBytes)
+		if pemBlock == nil {
+			return fmt.Errorf("failed to decode certificate authority certificate")
+		}
+		cert, err := x509.ParseCertificate(pemBlock.Bytes)
+		if err != nil {
+			return fmt.Errorf("failed to parse certificate authority certificate: %s", err)
+		}
+		caCerts = append(caCerts, cert)
+	}
+
+	pfxBytes, err := pkcs12.Encode(rand.Reader, key, cert, caCerts, password)
+	if err != nil {
+		return fmt.Errorf("failed to encode pcks12: %s", err)
+	}
+
+	err = ioutil.WriteFile(outName, pfxBytes, 0644)
+	if err != nil {
+		return fmt.Errorf("failed to save pkcs12: %s", err)
 	}
 
 	return nil

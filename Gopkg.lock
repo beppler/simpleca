@@ -7,9 +7,18 @@
   revision = "cfb38830724cc34fedffe9a2a29fb54fa9169cd1"
   version = "v1.20.0"
 
+[[projects]]
+  branch = "master"
+  name = "software.sslmate.com/src/go-pkcs12"
+  packages = [
+    ".",
+    "internal/rc2"
+  ]
+  revision = "2291e8f0f237e77e89ce233be7653ecca8cf391a"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "df4a79a3008603763e1d51475bb94e1290af5af71be4761ef9369093fcce7009"
+  inputs-digest = "7c54fa33b6599fe5801b3a4bcc9230a518fa5104a9283a1eb9cc5ddb3229b4da"
   solver-name = "gps-cdcl"
   solver-version = 1
