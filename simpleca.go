@@ -25,7 +25,7 @@ func main() {
 	app := cli.NewApp()
 	app.Name = "simpleca"
 	app.Usage = "Simple Certificate Authority"
-	app.Version = "0.5.0"
+	app.Version = "0.6.0"
 	app.Commands = []cli.Command{
 		{
 			Name:  "ca",
