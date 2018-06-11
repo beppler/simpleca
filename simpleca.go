@@ -29,7 +29,7 @@ func main() {
 	app.Commands = []cli.Command{
 		{
 			Name:  "ca",
-			Usage: "Generate a certificate authority certificate",
+			Usage: "Create a certificate authority certificate",
 			Flags: []cli.Flag{
 				cli.StringFlag{
 					Name:  "key",
@@ -62,7 +62,7 @@ func main() {
 		},
 		{
 			Name:  "csr",
-			Usage: "Generate a certificate request",
+			Usage: "Create a certificate request",
 			Flags: []cli.Flag{
 				cli.StringFlag{
 					Name:  "key",
@@ -117,7 +117,7 @@ func main() {
 		},
 		{
 			Name:  "crl",
-			Usage: "Generate a certificate revogation list (CRL)",
+			Usage: "Create a certificate revogation list (CRL)",
 			Flags: []cli.Flag{
 				cli.StringFlag{
 					Name:  "ca-cert",
