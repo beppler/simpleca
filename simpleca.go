@@ -149,7 +149,7 @@ func main() {
 		},
 		{
 			Name:  "key",
-			Usage: "Generate a RSA private key",
+			Usage: "Create a RSA private key",
 			Flags: []cli.Flag{
 				cli.IntFlag{
 					Name:  "size",
