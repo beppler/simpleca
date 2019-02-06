@@ -3,6 +3,8 @@
 
 ### Go ###
 # Compiled Object files, Static and Dynamic libs (Shared Objects)
+debug
+simpleca
 *.o
 *.a
 *.so
@@ -33,5 +35,3 @@ _testmain.go
 # external packages folder
 vendor/
 
-# vscode debug executable
-debug
