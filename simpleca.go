@@ -36,7 +36,7 @@ func main() {
 					Usage: "RSA private key file `NAME`",
 				},
 				cli.StringFlag{
-					Name:  "key-password",
+					Name:  "password",
 					Usage: "private key `PASSWORD`",
 				},
 				cli.StringFlag{
@@ -69,7 +69,7 @@ func main() {
 					Usage: "RSA private key file `NAME`",
 				},
 				cli.StringFlag{
-					Name:  "key-password",
+					Name:  "password",
 					Usage: "private key password",
 				},
 				cli.StringFlag{
@@ -93,7 +93,7 @@ func main() {
 					Usage: "Organizational unit for certificate request",
 				},
 				cli.StringFlag{
-					Name:  "common-name",
+					Name:  "cn",
 					Usage: "Common name for certificate request",
 				},
 				cli.StringSliceFlag{
@@ -128,7 +128,7 @@ func main() {
 					Usage: "Certificare authority RSA private key file `NAME`",
 				},
 				cli.StringFlag{
-					Name:  "ca-key-password",
+					Name:  "ca-password",
 					Usage: "private key password",
 				},
 				cli.IntFlag{
@@ -221,7 +221,7 @@ func main() {
 							Usage: "Certificare authority RSA private key file `NAME`",
 						},
 						cli.StringFlag{
-							Name:  "ca-key-password",
+							Name:  "ca-password",
 							Usage: "private key `PASSWORD`",
 						},
 						cli.StringSliceFlag{
@@ -266,7 +266,7 @@ func main() {
 							Usage: "Certificare authority RSA private key file `NAME`",
 						},
 						cli.StringFlag{
-							Name:  "ca-key-password",
+							Name:  "ca-password",
 							Usage: "private key `PASSWORD`",
 						},
 						cli.StringSliceFlag{
@@ -306,7 +306,7 @@ func main() {
 							Usage: "Certificare authority RSA private key file `NAME`",
 						},
 						cli.StringFlag{
-							Name:  "ca-key-password",
+							Name:  "ca-password",
 							Usage: "private key `PASSWORD`",
 						},
 						cli.StringSliceFlag{
@@ -346,7 +346,7 @@ func main() {
 							Usage: "Certificare authority RSA private key file `NAME`",
 						},
 						cli.StringFlag{
-							Name:  "ca-key-password",
+							Name:  "ca-password",
 							Usage: "private key `PASSWORD`",
 						},
 						cli.StringSliceFlag{
@@ -432,13 +432,13 @@ func genCSR(c *cli.Context) error {
 	if outFileName == "" {
 		return fmt.Errorf("output file name is required")
 	}
-	password := c.String("key-password")
+	password := c.String("password")
 	country := c.String("country")
 	province := c.String("province")
 	locality := c.String("locality")
 	organization := c.String("organization")
 	unit := c.String("unit")
-	commonName := c.String("common-name")
+	commonName := c.String("cn")
 	dnsNames := c.StringSlice("dns")
 
 	var ipAddresses []net.IP
@@ -546,7 +546,7 @@ func genCA(c *cli.Context) error {
 	if outFileName == "" {
 		return fmt.Errorf("output file name is required")
 	}
-	password := c.String("key-password")
+	password := c.String("password")
 	country := c.String("country")
 
 	pemBytes, err := ioutil.ReadFile(keyName)
@@ -578,7 +578,7 @@ func genCA(c *cli.Context) error {
 	now := time.Now()
 
 	template := x509.Certificate{
-		IsCA: true,
+		IsCA:                  true,
 		BasicConstraintsValid: true,
 		SerialNumber:          serialNumber,
 		Subject: pkix.Name{
@@ -630,7 +630,7 @@ func genCRL(c *cli.Context) error {
 	if caKeyName == "" {
 		caKeyName = strings.TrimSuffix(caCertName, filepath.Ext(caCertName)) + ".key"
 	}
-	caPassword := c.String("ca-key-password")
+	caPassword := c.String("ca-password")
 	certNames := c.StringSlice("cert")
 
 	pemBytes, err := ioutil.ReadFile(caCertName)
@@ -851,7 +851,7 @@ func signRequest(c *cli.Context, configure func(*x509.Certificate) error) error 
 	if caKeyName == "" {
 		caKeyName = strings.TrimSuffix(caCertName, filepath.Ext(caCertName)) + ".key"
 	}
-	caPassword := c.String("ca-key-password")
+	caPassword := c.String("ca-password")
 	crls := c.StringSlice("crl")
 	ocsps := c.StringSlice("ocsp")
 
@@ -939,7 +939,7 @@ func signRequest(c *cli.Context, configure func(*x509.Certificate) error) error 
 	}
 
 	template := x509.Certificate{
-		IsCA: false,
+		IsCA:                  false,
 		BasicConstraintsValid: true,
 		SerialNumber:          serialNumber,
 		Subject: pkix.Name{
