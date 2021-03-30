@@ -14,12 +14,12 @@ do
 	for ARCH in amd64 386
 	do
 		GOOS=$OS GOARCH=$ARCH go build -ldflags "-w -X main.version=${VERSION}"
-		TARBALL=dist/simpleca-$VERSION-$OS-$ARCH.tar.gz
+		TARBALL=dist/simpleca-$VERSION-$OS-$ARCH
 		if [ "$OS" = "windows" ]; then
-			tar czf $TARBALL simpleca.exe
+			zip $TARBALL.zip simpleca.exe
 			rm -f simpleca.exe
 		else
-			tar czf $TARBALL simpleca
+			tar czf $TARBALL.tag.gz simpleca
 			rm -f simpleca
 		fi
 	done
