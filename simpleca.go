@@ -21,11 +21,13 @@ import (
 	pkcs12 "software.sslmate.com/src/go-pkcs12"
 )
 
+var version = ""
+
 func main() {
 	app := cli.NewApp()
 	app.Name = "simpleca"
 	app.Usage = "Simple Certificate Authority"
-	app.Version = "0.7.0"
+	app.Version = version
 	app.Commands = []cli.Command{
 		{
 			Name:  "ca",
