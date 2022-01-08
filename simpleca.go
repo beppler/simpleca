@@ -398,7 +398,7 @@ func genKey(c *cli.Context) error {
 	keyBytes := x509.MarshalPKCS1PrivateKey(privateKey)
 
 	var keyPemBlock *pem.Block
-	if len(password) == 0 {
+	if password == "" {
 		keyPemBlock = &pem.Block{Type: "RSA PRIVATE KEY", Bytes: keyBytes}
 	} else {
 		keyPemBlock, err = pemutil.EncryptPKCS8PrivateKey(rand.Reader, keyBytes, []byte(password), x509.PEMCipherAES256)
@@ -415,7 +415,7 @@ func genKey(c *cli.Context) error {
 	}
 	outWriter.Flush()
 
-	if len(outFileName) == 0 {
+	if outFileName == "" {
 		_, err = os.Stdout.Write(outBuffer.Bytes())
 	} else {
 		err = os.WriteFile(outFileName, outBuffer.Bytes(), 0600)
@@ -464,7 +464,7 @@ func genCSR(c *cli.Context) error {
 	}
 
 	var keyBytes []byte
-	if len(password) == 0 {
+	if password == "" {
 		keyBytes = keyPemBlock.Bytes
 	} else {
 		keyBytes, err = pemutil.DecryptPEMBlock(keyPemBlock, []byte(password))
@@ -522,7 +522,7 @@ func genCSR(c *cli.Context) error {
 		return fmt.Errorf("failed to encode certificate request: %w", err)
 	}
 	outWriter.Flush()
-	if len(outFileName) == 0 {
+	if outFileName == "" {
 		_, err = os.Stdout.Write(outBuffer.Bytes())
 	} else {
 		err = os.WriteFile(outFileName, outBuffer.Bytes(), 0600)
@@ -562,7 +562,7 @@ func genCA(c *cli.Context) error {
 	}
 
 	var keyBytes []byte
-	if len(password) == 0 {
+	if password == "" {
 		keyBytes = keyPemBlock.Bytes
 	} else {
 		keyBytes, err = pemutil.DecryptPEMBlock(keyPemBlock, []byte(password))
@@ -608,7 +608,7 @@ func genCA(c *cli.Context) error {
 	}
 	outWriter.Flush()
 
-	if len(outFileName) == 0 {
+	if outFileName == "" {
 		_, err = os.Stdout.Write(outBuffer.Bytes())
 	} else {
 		err = os.WriteFile(outFileName, outBuffer.Bytes(), 0600)
@@ -663,7 +663,7 @@ func genCRL(c *cli.Context) error {
 	}
 
 	var keyBytes []byte
-	if len(caPassword) == 0 {
+	if caPassword == "" {
 		keyBytes = keyPemBlock.Bytes
 	} else {
 		keyBytes, err = pemutil.DecryptPEMBlock(keyPemBlock, []byte(caPassword))
@@ -743,7 +743,7 @@ func genCRL(c *cli.Context) error {
 		return fmt.Errorf("failed to encode certificate revogation list: %w", err)
 	}
 	outWriter.Flush()
-	if len(outFileName) == 0 {
+	if outFileName == "" {
 		_, err = os.Stdout.Write(outBuffer.Bytes())
 	} else {
 		err = os.WriteFile(outFileName, outBuffer.Bytes(), 0600)
@@ -793,7 +793,7 @@ func genPkcs(c *cli.Context) error {
 	}
 
 	var keyBytes []byte
-	if len(password) == 0 {
+	if password == "" {
 		keyBytes = keyPemBlock.Bytes
 	} else {
 		keyBytes, err = pemutil.DecryptPEMBlock(keyPemBlock, []byte(password))
@@ -830,7 +830,7 @@ func genPkcs(c *cli.Context) error {
 		return fmt.Errorf("failed to encode pcks12: %w", err)
 	}
 
-	if len(outFileName) == 0 {
+	if outFileName == "" {
 		_, err = os.Stdout.Write(pfxBytes)
 	} else {
 		err = os.WriteFile(outFileName, pfxBytes, 0600)
@@ -908,7 +908,7 @@ func signRequest(c *cli.Context, configure func(*x509.Certificate) error) error 
 	}
 
 	var keyBytes []byte
-	if len(caPassword) == 0 {
+	if caPassword == "" {
 		keyBytes = keyPemBlock.Bytes
 	} else {
 		keyBytes, err = pemutil.DecryptPEMBlock(keyPemBlock, []byte(caPassword))
