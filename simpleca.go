@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/urfave/cli/v2"
+	"go.step.sm/crypto/pemutil"
 	pkcs12 "software.sslmate.com/src/go-pkcs12"
 )
 
@@ -404,7 +405,7 @@ func genKey(c *cli.Context) error {
 	if len(password) == 0 {
 		keyPemBlock = &pem.Block{Type: "RSA PRIVATE KEY", Bytes: keyBytes}
 	} else {
-		keyPemBlock, err = x509.EncryptPEMBlock(rand.Reader, "RSA PRIVATE KEY", keyBytes, []byte(password), x509.PEMCipherAES256)
+		keyPemBlock, err = pemutil.EncryptPKCS8PrivateKey(rand.Reader, keyBytes, []byte(password), x509.PEMCipherAES256)
 		if err != nil {
 			return fmt.Errorf("failed to encrypt private key: %s", err)
 		}
@@ -468,7 +469,7 @@ func genCSR(c *cli.Context) error {
 	if len(password) == 0 {
 		keyBytes = keyPemBlock.Bytes
 	} else {
-		keyBytes, err = x509.DecryptPEMBlock(keyPemBlock, []byte(password))
+		keyBytes, err = pemutil.DecryptPEMBlock(keyPemBlock, []byte(password))
 		if err != nil {
 			return fmt.Errorf("failed to decrypt private key: %w", err)
 		}
@@ -565,7 +566,7 @@ func genCA(c *cli.Context) error {
 	if len(password) == 0 {
 		keyBytes = keyPemBlock.Bytes
 	} else {
-		keyBytes, err = x509.DecryptPEMBlock(keyPemBlock, []byte(password))
+		keyBytes, err = pemutil.DecryptPEMBlock(keyPemBlock, []byte(password))
 		if err != nil {
 			return fmt.Errorf("failed to decrypt private key: %w", err)
 		}
@@ -664,7 +665,7 @@ func genCRL(c *cli.Context) error {
 	if len(caPassword) == 0 {
 		keyBytes = keyPemBlock.Bytes
 	} else {
-		keyBytes, err = x509.DecryptPEMBlock(keyPemBlock, []byte(caPassword))
+		keyBytes, err = pemutil.DecryptPEMBlock(keyPemBlock, []byte(caPassword))
 		if err != nil {
 			return fmt.Errorf("failed to decrypt certificate authority private key: %w", err)
 		}
@@ -794,7 +795,7 @@ func genPkcs(c *cli.Context) error {
 	if len(password) == 0 {
 		keyBytes = keyPemBlock.Bytes
 	} else {
-		keyBytes, err = x509.DecryptPEMBlock(keyPemBlock, []byte(password))
+		keyBytes, err = pemutil.DecryptPEMBlock(keyPemBlock, []byte(password))
 		if err != nil {
 			return fmt.Errorf("failed to decrypt certificate authority private key: %w", err)
 		}
@@ -905,7 +906,7 @@ func signRequest(c *cli.Context, configure func(*x509.Certificate) error) error 
 	if len(caPassword) == 0 {
 		keyBytes = keyPemBlock.Bytes
 	} else {
-		keyBytes, err = x509.DecryptPEMBlock(keyPemBlock, []byte(caPassword))
+		keyBytes, err = pemutil.DecryptPEMBlock(keyPemBlock, []byte(caPassword))
 		if err != nil {
 			return fmt.Errorf("failed to decrypt certificate authority private key: %w", err)
 		}
