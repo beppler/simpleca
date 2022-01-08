@@ -17,7 +17,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 	pkcs12 "software.sslmate.com/src/go-pkcs12"
 )
 
@@ -28,34 +28,34 @@ func main() {
 	app.Name = "simpleca"
 	app.Usage = "Simple Certificate Authority"
 	app.Version = version
-	app.Commands = []cli.Command{
+	app.Commands = []*cli.Command{
 		{
 			Name:  "ca",
 			Usage: "Create a certificate authority certificate",
 			Flags: []cli.Flag{
-				cli.StringFlag{
+				&cli.StringFlag{
 					Name:  "key",
 					Usage: "RSA private key file `NAME`",
 				},
-				cli.StringFlag{
+				&cli.StringFlag{
 					Name:  "password",
 					Usage: "private key `PASSWORD`",
 				},
-				cli.StringFlag{
+				&cli.StringFlag{
 					Name:  "country",
 					Usage: "Country code for certificate request (ex. US)",
 				},
-				cli.StringFlag{
+				&cli.StringFlag{
 					Name:  "organization",
 					Usage: "Organization name for certificate",
 					Value: "ACME Development Certificate Authority",
 				},
-				cli.IntFlag{
+				&cli.IntFlag{
 					Name:  "validity",
 					Usage: "Validity time in `YEARS`",
 					Value: 10,
 				},
-				cli.StringFlag{
+				&cli.StringFlag{
 					Name:  "out",
 					Usage: "Certificate authority certificate output file `NAME`",
 				},
@@ -66,51 +66,51 @@ func main() {
 			Name:  "csr",
 			Usage: "Create a certificate request",
 			Flags: []cli.Flag{
-				cli.StringFlag{
+				&cli.StringFlag{
 					Name:  "key",
 					Usage: "RSA private key file `NAME`",
 				},
-				cli.StringFlag{
+				&cli.StringFlag{
 					Name:  "password",
 					Usage: "private key password",
 				},
-				cli.StringFlag{
+				&cli.StringFlag{
 					Name:  "country",
 					Usage: "Country code (ex. US) for certificate request",
 				},
-				cli.StringFlag{
+				&cli.StringFlag{
 					Name:  "province",
 					Usage: "Province (ex. California) for certificate request",
 				},
-				cli.StringFlag{
+				&cli.StringFlag{
 					Name:  "locality",
 					Usage: "Locality (ex. Los Angeles) for certificate request",
 				},
-				cli.StringFlag{
+				&cli.StringFlag{
 					Name:  "organization",
 					Usage: "Organization for certificate request",
 				},
-				cli.StringFlag{
+				&cli.StringFlag{
 					Name:  "unit",
 					Usage: "Organizational unit for certificate request",
 				},
-				cli.StringFlag{
+				&cli.StringFlag{
 					Name:  "cn",
 					Usage: "Common name for certificate request",
 				},
-				cli.StringSliceFlag{
+				&cli.StringSliceFlag{
 					Name:  "dns",
 					Usage: "Alternative host name for certificate request",
 				},
-				cli.StringSliceFlag{
+				&cli.StringSliceFlag{
 					Name:  "ip",
 					Usage: "Alternative IP address for certificate request",
 				},
-				cli.StringSliceFlag{
+				&cli.StringSliceFlag{
 					Name:  "email",
 					Usage: "Alternative RFC822 email address for certificate request",
 				},
-				cli.StringFlag{
+				&cli.StringFlag{
 					Name:  "out",
 					Usage: "Certificate request output file `NAME`",
 				},
@@ -121,28 +121,28 @@ func main() {
 			Name:  "crl",
 			Usage: "Create a certificate revogation list (CRL)",
 			Flags: []cli.Flag{
-				cli.StringFlag{
+				&cli.StringFlag{
 					Name:  "ca-cert",
 					Usage: "Certificate authority certificate file `NAME`",
 				},
-				cli.StringFlag{
+				&cli.StringFlag{
 					Name:  "ca-key",
 					Usage: "Certificare authority RSA private key file `NAME`",
 				},
-				cli.StringFlag{
+				&cli.StringFlag{
 					Name:  "ca-password",
 					Usage: "private key password",
 				},
-				cli.IntFlag{
+				&cli.IntFlag{
 					Name:  "validity",
 					Usage: "Validity time in `days` (0 to copy certificate authority validity)",
 					Value: 7,
 				},
-				cli.StringSliceFlag{
+				&cli.StringSliceFlag{
 					Name:  "cert",
 					Usage: "Certificate to be included on CRL",
 				},
-				cli.StringFlag{
+				&cli.StringFlag{
 					Name:  "out",
 					Usage: "Certificate revogation list output file `NAME`",
 				},
@@ -153,16 +153,16 @@ func main() {
 			Name:  "key",
 			Usage: "Create a RSA private key",
 			Flags: []cli.Flag{
-				cli.IntFlag{
+				&cli.IntFlag{
 					Name:  "size",
 					Usage: "private key `SIZE` (in bits)",
 					Value: 2048,
 				},
-				cli.StringFlag{
+				&cli.StringFlag{
 					Name:  "password",
 					Usage: "private key `PASSWORD`",
 				},
-				cli.StringFlag{
+				&cli.StringFlag{
 					Name:  "out",
 					Usage: "RSA private key output file `NAME`",
 				},
@@ -172,28 +172,28 @@ func main() {
 		{
 			Name:  "pkcs",
 			Usage: "PCKS12 support",
-			Subcommands: []cli.Command{
+			Subcommands: []*cli.Command{
 				{
 					Name:  "encode",
 					Usage: "Encode a PKCS12 file from certificate and private key",
 					Flags: []cli.Flag{
-						cli.StringFlag{
+						&cli.StringFlag{
 							Name:  "cert",
 							Usage: "Certificate file `NAME`",
 						},
-						cli.StringFlag{
+						&cli.StringFlag{
 							Name:  "key",
 							Usage: "Private key file `NAME`",
 						},
-						cli.StringFlag{
+						&cli.StringFlag{
 							Name:  "password",
 							Usage: "Private key `PASSWORD`",
 						},
-						cli.StringSliceFlag{
+						&cli.StringSliceFlag{
 							Name:  "ca-cert",
 							Usage: "Certificate authorities certificate file `NAME`",
 						},
-						cli.StringFlag{
+						&cli.StringFlag{
 							Name:  "out",
 							Usage: "PKCS12 output file `NAME`",
 						},
@@ -205,46 +205,46 @@ func main() {
 		{
 			Name:  "sign",
 			Usage: "Sign a certificate request",
-			Subcommands: []cli.Command{
+			Subcommands: []*cli.Command{
 				{
 					Name:  "ca",
 					Usage: "Sign a subordinate certificate authority request",
 					Flags: []cli.Flag{
-						cli.StringFlag{
+						&cli.StringFlag{
 							Name:  "csr",
 							Usage: "Certificate request file `NAME`",
 						},
-						cli.StringFlag{
+						&cli.StringFlag{
 							Name:  "ca-cert",
 							Usage: "Certificate authority certificate file `NAME`",
 						},
-						cli.StringFlag{
+						&cli.StringFlag{
 							Name:  "ca-key",
 							Usage: "Certificare authority RSA private key file `NAME`",
 						},
-						cli.StringFlag{
+						&cli.StringFlag{
 							Name:  "ca-password",
 							Usage: "private key `PASSWORD`",
 						},
-						cli.StringSliceFlag{
+						&cli.StringSliceFlag{
 							Name:  "crl",
 							Usage: "CRL distribution points `URI` for certificate",
 						},
-						cli.StringSliceFlag{
+						&cli.StringSliceFlag{
 							Name:  "ocsp",
 							Usage: "OCSP servers `URI` for certificate",
 						},
-						cli.IntFlag{
+						&cli.IntFlag{
 							Name:  "max-path-len",
 							Usage: "Maximum number of subordinate CAs",
 							Value: 0,
 						},
-						cli.IntFlag{
+						&cli.IntFlag{
 							Name:  "validity",
 							Usage: "Validity time in `YEARS`",
 							Value: 5,
 						},
-						cli.StringFlag{
+						&cli.StringFlag{
 							Name:  "out",
 							Usage: "Server certificate output file `NAME`",
 						},
@@ -255,36 +255,36 @@ func main() {
 					Name:  "code",
 					Usage: "Sign a code signing certificate request",
 					Flags: []cli.Flag{
-						cli.StringFlag{
+						&cli.StringFlag{
 							Name:  "csr",
 							Usage: "Certificate request file `NAME`",
 						},
-						cli.StringFlag{
+						&cli.StringFlag{
 							Name:  "ca-cert",
 							Usage: "Certificate authority certificate file `NAME`",
 						},
-						cli.StringFlag{
+						&cli.StringFlag{
 							Name:  "ca-key",
 							Usage: "Certificare authority RSA private key file `NAME`",
 						},
-						cli.StringFlag{
+						&cli.StringFlag{
 							Name:  "ca-password",
 							Usage: "private key `PASSWORD`",
 						},
-						cli.StringSliceFlag{
+						&cli.StringSliceFlag{
 							Name:  "crl",
 							Usage: "CRL distribution points `URI` for certificate",
 						},
-						cli.StringSliceFlag{
+						&cli.StringSliceFlag{
 							Name:  "ocsp",
 							Usage: "OCSP servers `URI` for certificate",
 						},
-						cli.IntFlag{
+						&cli.IntFlag{
 							Name:  "validity",
 							Usage: "Validity time in `YEARS`",
 							Value: 2,
 						},
-						cli.StringFlag{
+						&cli.StringFlag{
 							Name:  "out",
 							Usage: "Server certificate output file `NAME`",
 						},
@@ -295,36 +295,36 @@ func main() {
 					Name:  "server",
 					Usage: "Sign a server certificate request",
 					Flags: []cli.Flag{
-						cli.StringFlag{
+						&cli.StringFlag{
 							Name:  "csr",
 							Usage: "Certificate request file `NAME`",
 						},
-						cli.StringFlag{
+						&cli.StringFlag{
 							Name:  "ca-cert",
 							Usage: "Certificate authority certificate file `NAME`",
 						},
-						cli.StringFlag{
+						&cli.StringFlag{
 							Name:  "ca-key",
 							Usage: "Certificare authority RSA private key file `NAME`",
 						},
-						cli.StringFlag{
+						&cli.StringFlag{
 							Name:  "ca-password",
 							Usage: "private key `PASSWORD`",
 						},
-						cli.StringSliceFlag{
+						&cli.StringSliceFlag{
 							Name:  "crl",
 							Usage: "CRL distribution points `URI` for certificate",
 						},
-						cli.StringSliceFlag{
+						&cli.StringSliceFlag{
 							Name:  "ocsp",
 							Usage: "OCSP servers `URI` for certificate",
 						},
-						cli.IntFlag{
+						&cli.IntFlag{
 							Name:  "validity",
 							Usage: "Validity time in `YEARS`",
 							Value: 2,
 						},
-						cli.StringFlag{
+						&cli.StringFlag{
 							Name:  "out",
 							Usage: "Server certificate output file `NAME`",
 						},
@@ -335,36 +335,36 @@ func main() {
 					Name:  "user",
 					Usage: "Sign a user certificate request",
 					Flags: []cli.Flag{
-						cli.StringFlag{
+						&cli.StringFlag{
 							Name:  "csr",
 							Usage: "Certificate request file `NAME`",
 						},
-						cli.StringFlag{
+						&cli.StringFlag{
 							Name:  "ca-cert",
 							Usage: "Certificate authority certificate file `NAME`",
 						},
-						cli.StringFlag{
+						&cli.StringFlag{
 							Name:  "ca-key",
 							Usage: "Certificare authority RSA private key file `NAME`",
 						},
-						cli.StringFlag{
+						&cli.StringFlag{
 							Name:  "ca-password",
 							Usage: "private key `PASSWORD`",
 						},
-						cli.StringSliceFlag{
+						&cli.StringSliceFlag{
 							Name:  "crl",
 							Usage: "CRL distribution points `URI` for certificate",
 						},
-						cli.StringSliceFlag{
+						&cli.StringSliceFlag{
 							Name:  "ocsp",
 							Usage: "OCSP servers `URI` for certificate",
 						},
-						cli.IntFlag{
+						&cli.IntFlag{
 							Name:  "validity",
 							Usage: "Validity time in `YEARS`",
 							Value: 2,
 						},
-						cli.StringFlag{
+						&cli.StringFlag{
 							Name:  "out",
 							Usage: "Server certificate output file `NAME`",
 						},
