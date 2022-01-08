@@ -522,6 +522,7 @@ func genCSR(c *cli.Context) error {
 		return fmt.Errorf("failed to encode certificate request: %w", err)
 	}
 	outWriter.Flush()
+
 	if outFileName == "" {
 		_, err = os.Stdout.Write(outBuffer.Bytes())
 	} else {
@@ -743,6 +744,7 @@ func genCRL(c *cli.Context) error {
 		return fmt.Errorf("failed to encode certificate revogation list: %w", err)
 	}
 	outWriter.Flush()
+
 	if outFileName == "" {
 		_, err = os.Stdout.Write(outBuffer.Bytes())
 	} else {
@@ -851,10 +853,7 @@ func signRequest(c *cli.Context, configure func(*x509.Certificate) error) error 
 	if caCertName == "" {
 		return fmt.Errorf("certificate authority certificate file name is required")
 	}
-	outName := c.String("out")
-	if outName == "" {
-		return fmt.Errorf("output file name is required")
-	}
+	outFileName := c.String("out")
 	caKeyName := c.String("ca-key")
 	if caKeyName == "" {
 		caKeyName = strings.TrimSuffix(caCertName, filepath.Ext(caCertName)) + ".key"
@@ -1010,7 +1009,12 @@ func signRequest(c *cli.Context, configure func(*x509.Certificate) error) error 
 		return fmt.Errorf("failed to encode certificate: %w", err)
 	}
 	outWriter.Flush()
-	err = os.WriteFile(outName, outBuffer.Bytes(), 0644)
+
+	if outFileName == "" {
+		_, err = os.Stdout.Write(outBuffer.Bytes())
+	} else {
+		err = os.WriteFile(outFileName, outBuffer.Bytes(), 0600)
+	}
 	if err != nil {
 		return fmt.Errorf("failed to save certificate: %w", err)
 	}
