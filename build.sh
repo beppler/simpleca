@@ -9,18 +9,21 @@ fi
 mkdir -p dist
 rm -f dist/*
 
-for OS in linux windows
+platforms=("windows/amd64" "windows/386" "windows/arm64" "linux/amd64" "linux/386" "linux/arm64" "darwin/amd64" "darwin/arm64")
+
+for platform in "${platforms[@]}"
 do
-	for ARCH in amd64 386
-	do
-		GOOS=$OS GOARCH=$ARCH go build -ldflags "-w -X main.version=${VERSION}"
-		TARBALL=dist/simpleca-$VERSION-$OS-$ARCH
-		if [ "$OS" = "windows" ]; then
-			zip $TARBALL.zip simpleca.exe
-			rm -f simpleca.exe
-		else
-			tar czf $TARBALL.tag.gz simpleca
-			rm -f simpleca
-		fi
-	done
+	platform_split=(${platform//\// })
+	GOOS=${platform_split[0]}
+	GOARCH=${platform_split[1]}
+	echo CGO_ENABLED=0 GOOS=$GOOS GOARCH=$GOARCH go build -ldflags "-w -X main.version=${VERSION}"
+	CGO_ENABLED=0 GOOS=$GOOS GOARCH=$GOARCH go build -ldflags "-w -X main.version=${VERSION}"
+	TARBALL=dist/simpleca-$VERSION-$GOOS-$GOARCH
+	if [ "$GOOS" = "windows" ]; then
+		zip $TARBALL.zip simpleca.exe
+		rm -f simpleca.exe
+	else
+		tar czf $TARBALL.tar.gz simpleca
+		rm -f simpleca
+	fi
 done
