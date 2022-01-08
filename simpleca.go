@@ -395,7 +395,7 @@ func genKey(c *cli.Context) error {
 
 	privateKey, err := rsa.GenerateKey(rand.Reader, size)
 	if err != nil {
-		return fmt.Errorf("failed to generate private key: %s", err)
+		return fmt.Errorf("failed to generate private key: %w", err)
 	}
 
 	keyBytes := x509.MarshalPKCS1PrivateKey(privateKey)
@@ -414,12 +414,12 @@ func genKey(c *cli.Context) error {
 	outWriter := bufio.NewWriter(&outBuffer)
 	err = pem.Encode(outWriter, keyPemBlock)
 	if err != nil {
-		return fmt.Errorf("failed to encode private key: %s", err)
+		return fmt.Errorf("failed to encode private key: %w", err)
 	}
 	outWriter.Flush()
 	err = ioutil.WriteFile(outFileName, outBuffer.Bytes(), 0600)
 	if err != nil {
-		return fmt.Errorf("failed to save private key: %s", err)
+		return fmt.Errorf("failed to save private key: %w", err)
 	}
 
 	return nil
@@ -456,7 +456,7 @@ func genCSR(c *cli.Context) error {
 
 	pemBytes, err := ioutil.ReadFile(keyName)
 	if err != nil {
-		return fmt.Errorf("failed to load private key: %s", err)
+		return fmt.Errorf("failed to load private key: %w", err)
 	}
 
 	keyPemBlock, _ := pem.Decode(pemBytes)
@@ -470,13 +470,13 @@ func genCSR(c *cli.Context) error {
 	} else {
 		keyBytes, err = x509.DecryptPEMBlock(keyPemBlock, []byte(password))
 		if err != nil {
-			return fmt.Errorf("failed to decrypt private key: %s", err)
+			return fmt.Errorf("failed to decrypt private key: %w", err)
 		}
 	}
 
 	privateKey, err := x509.ParsePKCS1PrivateKey(keyBytes)
 	if err != nil {
-		return fmt.Errorf("failed to parse private key: %s", err)
+		return fmt.Errorf("failed to parse private key: %w", err)
 	}
 
 	template := x509.CertificateRequest{
@@ -513,19 +513,19 @@ func genCSR(c *cli.Context) error {
 
 	reqBytes, err := x509.CreateCertificateRequest(rand.Reader, &template, privateKey)
 	if err != nil {
-		return fmt.Errorf("failed to create certificate request: %s", err)
+		return fmt.Errorf("failed to create certificate request: %w", err)
 	}
 
 	var outBuffer bytes.Buffer
 	outWriter := bufio.NewWriter(&outBuffer)
 	err = pem.Encode(outWriter, &pem.Block{Type: "CERTIFICATE REQUEST", Bytes: reqBytes})
 	if err != nil {
-		return fmt.Errorf("failed to encode certificate request: %s", err)
+		return fmt.Errorf("failed to encode certificate request: %w", err)
 	}
 	outWriter.Flush()
 	err = ioutil.WriteFile(outFileName, outBuffer.Bytes(), 0644)
 	if err != nil {
-		return fmt.Errorf("failed to save certificate request: %s", err)
+		return fmt.Errorf("failed to save certificate request: %w", err)
 	}
 
 	return nil
@@ -553,7 +553,7 @@ func genCA(c *cli.Context) error {
 
 	pemBytes, err := ioutil.ReadFile(keyName)
 	if err != nil {
-		return fmt.Errorf("failed to load private key: %s", err)
+		return fmt.Errorf("failed to load private key: %w", err)
 	}
 
 	keyPemBlock, _ := pem.Decode(pemBytes)
@@ -567,13 +567,13 @@ func genCA(c *cli.Context) error {
 	} else {
 		keyBytes, err = x509.DecryptPEMBlock(keyPemBlock, []byte(password))
 		if err != nil {
-			return fmt.Errorf("failed to decrypt private key: %s", err)
+			return fmt.Errorf("failed to decrypt private key: %w", err)
 		}
 	}
 
 	privateKey, err := x509.ParsePKCS1PrivateKey(keyBytes)
 	if err != nil {
-		return fmt.Errorf("failed to parse private key: %s", err)
+		return fmt.Errorf("failed to parse private key: %w", err)
 	}
 
 	serialNumber := big.NewInt(1)
@@ -597,19 +597,19 @@ func genCA(c *cli.Context) error {
 
 	certBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, privateKey.Public(), privateKey)
 	if err != nil {
-		return fmt.Errorf("failed to create certificate: %s", err)
+		return fmt.Errorf("failed to create certificate: %w", err)
 	}
 
 	var outBuffer bytes.Buffer
 	outWriter := bufio.NewWriter(&outBuffer)
 	err = pem.Encode(outWriter, &pem.Block{Type: "CERTIFICATE", Bytes: certBytes})
 	if err != nil {
-		return fmt.Errorf("failed to encode certificate: %s", err)
+		return fmt.Errorf("failed to encode certificate: %w", err)
 	}
 	outWriter.Flush()
 	err = ioutil.WriteFile(outFileName, outBuffer.Bytes(), 0644)
 	if err != nil {
-		return fmt.Errorf("failed to save certificate: %s", err)
+		return fmt.Errorf("failed to save certificate: %w", err)
 	}
 
 	return nil
@@ -637,7 +637,7 @@ func genCRL(c *cli.Context) error {
 
 	pemBytes, err := ioutil.ReadFile(caCertName)
 	if err != nil {
-		return fmt.Errorf("failed to load certificate authority certificate: %s", err)
+		return fmt.Errorf("failed to load certificate authority certificate: %w", err)
 	}
 
 	certPemBlock, _ := pem.Decode(pemBytes)
@@ -647,12 +647,12 @@ func genCRL(c *cli.Context) error {
 
 	certificate, err := x509.ParseCertificate(certPemBlock.Bytes)
 	if err != nil {
-		return fmt.Errorf("failed to parse certificate authority certificate: %s", err)
+		return fmt.Errorf("failed to parse certificate authority certificate: %w", err)
 	}
 
 	pemBytes, err = ioutil.ReadFile(caKeyName)
 	if err != nil {
-		return fmt.Errorf("failed to load certificate authority private key: %s", err)
+		return fmt.Errorf("failed to load certificate authority private key: %w", err)
 	}
 
 	keyPemBlock, _ := pem.Decode(pemBytes)
@@ -666,13 +666,13 @@ func genCRL(c *cli.Context) error {
 	} else {
 		keyBytes, err = x509.DecryptPEMBlock(keyPemBlock, []byte(caPassword))
 		if err != nil {
-			return fmt.Errorf("failed to decrypt certificate authority private key: %s", err)
+			return fmt.Errorf("failed to decrypt certificate authority private key: %w", err)
 		}
 	}
 
 	privateKey, err := x509.ParsePKCS1PrivateKey(keyBytes)
 	if err != nil {
-		return fmt.Errorf("failed to parse certificate authority private key: %s", err)
+		return fmt.Errorf("failed to parse certificate authority private key: %w", err)
 	}
 
 	now := time.Now().UTC()
@@ -691,11 +691,11 @@ func genCRL(c *cli.Context) error {
 	if _, err := os.Stat(outFileName); !os.IsNotExist(err) {
 		crlBytes, err := ioutil.ReadFile(outFileName)
 		if err != nil {
-			return fmt.Errorf("failed to load original crl: %s", err)
+			return fmt.Errorf("failed to load original crl: %w", err)
 		}
 		certs, err := x509.ParseCRL(crlBytes)
 		if err != nil {
-			return fmt.Errorf("failed to parse original crl: %s", err)
+			return fmt.Errorf("failed to parse original crl: %w", err)
 		}
 		revokedCertificates = certs.TBSCertList.RevokedCertificates
 	}
@@ -703,7 +703,7 @@ func genCRL(c *cli.Context) error {
 	for _, certName := range certNames {
 		pemBytes, err := ioutil.ReadFile(certName)
 		if err != nil {
-			return fmt.Errorf("failed to load certificate: %s", err)
+			return fmt.Errorf("failed to load certificate: %w", err)
 		}
 		certPemBlock, _ := pem.Decode(pemBytes)
 		if certPemBlock == nil {
@@ -711,7 +711,7 @@ func genCRL(c *cli.Context) error {
 		}
 		certificate, err := x509.ParseCertificate(certPemBlock.Bytes)
 		if err != nil {
-			return fmt.Errorf("failed to parse certificate authority certificate: %s", err)
+			return fmt.Errorf("failed to parse certificate authority certificate: %w", err)
 		}
 		found := false
 		for _, revoked := range revokedCertificates {
@@ -731,19 +731,19 @@ func genCRL(c *cli.Context) error {
 
 	crlBytes, err := certificate.CreateCRL(rand.Reader, privateKey, revokedCertificates, now, notAfter)
 	if err != nil {
-		return fmt.Errorf("failed create certificate revogation list: %s", err)
+		return fmt.Errorf("failed create certificate revogation list: %w", err)
 	}
 
 	var outBuffer bytes.Buffer
 	outWriter := bufio.NewWriter(&outBuffer)
 	err = pem.Encode(outWriter, &pem.Block{Type: "X509 CRL", Bytes: crlBytes})
 	if err != nil {
-		return fmt.Errorf("failed to encode certificate revogation list: %s", err)
+		return fmt.Errorf("failed to encode certificate revogation list: %w", err)
 	}
 	outWriter.Flush()
 	err = ioutil.WriteFile(outFileName, outBuffer.Bytes(), 0644)
 	if err != nil {
-		return fmt.Errorf("failed to save certificate revogation list: %s", err)
+		return fmt.Errorf("failed to save certificate revogation list: %w", err)
 	}
 
 	return nil
@@ -767,7 +767,7 @@ func genPkcs(c *cli.Context) error {
 
 	certPemBytes, err := ioutil.ReadFile(certName)
 	if err != nil {
-		return fmt.Errorf("failed to load certificate: %s", err)
+		return fmt.Errorf("failed to load certificate: %w", err)
 	}
 
 	certPemBlock, _ := pem.Decode(certPemBytes)
@@ -777,12 +777,12 @@ func genPkcs(c *cli.Context) error {
 
 	cert, err := x509.ParseCertificate(certPemBlock.Bytes)
 	if err != nil {
-		return fmt.Errorf("failed to parse certificate : %s", err)
+		return fmt.Errorf("failed to parse certificate : %w", err)
 	}
 
 	keyPemBytes, err := ioutil.ReadFile(keyName)
 	if err != nil {
-		return fmt.Errorf("failed to load private key: %s", err)
+		return fmt.Errorf("failed to load private key: %w", err)
 	}
 
 	keyPemBlock, _ := pem.Decode(keyPemBytes)
@@ -796,13 +796,13 @@ func genPkcs(c *cli.Context) error {
 	} else {
 		keyBytes, err = x509.DecryptPEMBlock(keyPemBlock, []byte(password))
 		if err != nil {
-			return fmt.Errorf("failed to decrypt certificate authority private key: %s", err)
+			return fmt.Errorf("failed to decrypt certificate authority private key: %w", err)
 		}
 	}
 
 	key, err := x509.ParsePKCS1PrivateKey(keyBytes)
 	if err != nil {
-		return fmt.Errorf("failed to parse certificate authority private key: %s", err)
+		return fmt.Errorf("failed to parse certificate authority private key: %w", err)
 	}
 
 	var caCerts []*x509.Certificate
@@ -810,7 +810,7 @@ func genPkcs(c *cli.Context) error {
 	for _, certName := range caCertNames {
 		pemBytes, err := ioutil.ReadFile(certName)
 		if err != nil {
-			return fmt.Errorf("failed to load certificate: %s", err)
+			return fmt.Errorf("failed to load certificate: %w", err)
 		}
 		pemBlock, _ := pem.Decode(pemBytes)
 		if pemBlock == nil {
@@ -818,19 +818,19 @@ func genPkcs(c *cli.Context) error {
 		}
 		cert, err := x509.ParseCertificate(pemBlock.Bytes)
 		if err != nil {
-			return fmt.Errorf("failed to parse certificate authority certificate: %s", err)
+			return fmt.Errorf("failed to parse certificate authority certificate: %w", err)
 		}
 		caCerts = append(caCerts, cert)
 	}
 
 	pfxBytes, err := pkcs12.Encode(rand.Reader, key, cert, caCerts, password)
 	if err != nil {
-		return fmt.Errorf("failed to encode pcks12: %s", err)
+		return fmt.Errorf("failed to encode pcks12: %w", err)
 	}
 
 	err = ioutil.WriteFile(outName, pfxBytes, 0644)
 	if err != nil {
-		return fmt.Errorf("failed to save pkcs12: %s", err)
+		return fmt.Errorf("failed to save pkcs12: %w", err)
 	}
 
 	return nil
@@ -859,7 +859,7 @@ func signRequest(c *cli.Context, configure func(*x509.Certificate) error) error 
 
 	pemBytes, err := ioutil.ReadFile(csrName)
 	if err != nil {
-		return fmt.Errorf("failed to load certificate request: %s", err)
+		return fmt.Errorf("failed to load certificate request: %w", err)
 	}
 
 	reqPemBlock, _ := pem.Decode(pemBytes)
@@ -869,7 +869,7 @@ func signRequest(c *cli.Context, configure func(*x509.Certificate) error) error 
 
 	request, err := x509.ParseCertificateRequest(reqPemBlock.Bytes)
 	if err != nil {
-		return fmt.Errorf("failed to parse certificate request: %s", err)
+		return fmt.Errorf("failed to parse certificate request: %w", err)
 	}
 
 	if request.Subject.CommonName == "" {
@@ -878,7 +878,7 @@ func signRequest(c *cli.Context, configure func(*x509.Certificate) error) error 
 
 	pemBytes, err = ioutil.ReadFile(caCertName)
 	if err != nil {
-		return fmt.Errorf("failed to load certificate authority certificate: %s", err)
+		return fmt.Errorf("failed to load certificate authority certificate: %w", err)
 	}
 
 	certPemBlock, _ := pem.Decode(pemBytes)
@@ -888,12 +888,12 @@ func signRequest(c *cli.Context, configure func(*x509.Certificate) error) error 
 
 	caCert, err := x509.ParseCertificate(certPemBlock.Bytes)
 	if err != nil {
-		return fmt.Errorf("failed to parse certificate authority certificate: %s", err)
+		return fmt.Errorf("failed to parse certificate authority certificate: %w", err)
 	}
 
 	pemBytes, err = ioutil.ReadFile(caKeyName)
 	if err != nil {
-		return fmt.Errorf("failed to load certificate authority private key: %s", err)
+		return fmt.Errorf("failed to load certificate authority private key: %w", err)
 	}
 
 	keyPemBlock, _ := pem.Decode(pemBytes)
@@ -907,13 +907,13 @@ func signRequest(c *cli.Context, configure func(*x509.Certificate) error) error 
 	} else {
 		keyBytes, err = x509.DecryptPEMBlock(keyPemBlock, []byte(caPassword))
 		if err != nil {
-			return fmt.Errorf("failed to decrypt certificate authority private key: %s", err)
+			return fmt.Errorf("failed to decrypt certificate authority private key: %w", err)
 		}
 	}
 
 	caKey, err := x509.ParsePKCS1PrivateKey(keyBytes)
 	if err != nil {
-		return fmt.Errorf("failed to parse certificate authority private key: %s", err)
+		return fmt.Errorf("failed to parse certificate authority private key: %w", err)
 	}
 
 	crlsName := strings.TrimSuffix(caKeyName, filepath.Ext(caKeyName)) + ".crls.txt"
@@ -985,7 +985,7 @@ func signRequest(c *cli.Context, configure func(*x509.Certificate) error) error 
 	}
 
 	if err := configure(&template); err != nil {
-		return fmt.Errorf("failed to configure certificate policies: %s", err)
+		return fmt.Errorf("failed to configure certificate policies: %w", err)
 	}
 
 	if template.NotAfter.After(caCert.NotAfter) {
@@ -994,19 +994,19 @@ func signRequest(c *cli.Context, configure func(*x509.Certificate) error) error 
 
 	certBytes, err := x509.CreateCertificate(rand.Reader, &template, caCert, request.PublicKey, caKey)
 	if err != nil {
-		return fmt.Errorf("failed to create certificate: %s", err)
+		return fmt.Errorf("failed to create certificate: %w", err)
 	}
 
 	var outBuffer bytes.Buffer
 	outWriter := bufio.NewWriter(&outBuffer)
 	err = pem.Encode(outWriter, &pem.Block{Type: "CERTIFICATE", Bytes: certBytes})
 	if err != nil {
-		return fmt.Errorf("failed to encode certificate: %s", err)
+		return fmt.Errorf("failed to encode certificate: %w", err)
 	}
 	outWriter.Flush()
 	err = ioutil.WriteFile(outName, outBuffer.Bytes(), 0644)
 	if err != nil {
-		return fmt.Errorf("failed to save certificate: %s", err)
+		return fmt.Errorf("failed to save certificate: %w", err)
 	}
 
 	return nil
