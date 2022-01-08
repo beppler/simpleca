@@ -9,7 +9,6 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
 	"math/big"
 	"net"
 	"os"
@@ -19,7 +18,7 @@ import (
 
 	"github.com/urfave/cli/v2"
 	"go.step.sm/crypto/pemutil"
-	pkcs12 "software.sslmate.com/src/go-pkcs12"
+	"software.sslmate.com/src/go-pkcs12"
 )
 
 var version = ""
@@ -389,9 +388,6 @@ func genKey(c *cli.Context) error {
 		return fmt.Errorf("key size must be at least 1024 bits")
 	}
 	outFileName := c.String("out")
-	if outFileName == "" {
-		return fmt.Errorf("output file name is required")
-	}
 	password := c.String("password")
 
 	privateKey, err := rsa.GenerateKey(rand.Reader, size)
@@ -418,7 +414,12 @@ func genKey(c *cli.Context) error {
 		return fmt.Errorf("failed to encode private key: %w", err)
 	}
 	outWriter.Flush()
-	err = ioutil.WriteFile(outFileName, outBuffer.Bytes(), 0600)
+
+	if len(outFileName) == 0 {
+		_, err = os.Stdout.Write(outBuffer.Bytes())
+	} else {
+		err = os.WriteFile(outFileName, outBuffer.Bytes(), 0600)
+	}
 	if err != nil {
 		return fmt.Errorf("failed to save private key: %w", err)
 	}
@@ -432,9 +433,6 @@ func genCSR(c *cli.Context) error {
 		return fmt.Errorf("private key file name is required")
 	}
 	outFileName := c.String("out")
-	if outFileName == "" {
-		return fmt.Errorf("output file name is required")
-	}
 	password := c.String("password")
 	country := c.String("country")
 	province := c.String("province")
@@ -455,7 +453,7 @@ func genCSR(c *cli.Context) error {
 
 	emails := c.StringSlice("email")
 
-	pemBytes, err := ioutil.ReadFile(keyName)
+	pemBytes, err := os.ReadFile(keyName)
 	if err != nil {
 		return fmt.Errorf("failed to load private key: %w", err)
 	}
@@ -524,7 +522,11 @@ func genCSR(c *cli.Context) error {
 		return fmt.Errorf("failed to encode certificate request: %w", err)
 	}
 	outWriter.Flush()
-	err = ioutil.WriteFile(outFileName, outBuffer.Bytes(), 0644)
+	if len(outFileName) == 0 {
+		_, err = os.Stdout.Write(outBuffer.Bytes())
+	} else {
+		err = os.WriteFile(outFileName, outBuffer.Bytes(), 0600)
+	}
 	if err != nil {
 		return fmt.Errorf("failed to save certificate request: %w", err)
 	}
@@ -546,13 +548,10 @@ func genCA(c *cli.Context) error {
 		return fmt.Errorf("validity must be a positive number")
 	}
 	outFileName := c.String("out")
-	if outFileName == "" {
-		return fmt.Errorf("output file name is required")
-	}
 	password := c.String("password")
 	country := c.String("country")
 
-	pemBytes, err := ioutil.ReadFile(keyName)
+	pemBytes, err := os.ReadFile(keyName)
 	if err != nil {
 		return fmt.Errorf("failed to load private key: %w", err)
 	}
@@ -608,7 +607,12 @@ func genCA(c *cli.Context) error {
 		return fmt.Errorf("failed to encode certificate: %w", err)
 	}
 	outWriter.Flush()
-	err = ioutil.WriteFile(outFileName, outBuffer.Bytes(), 0644)
+
+	if len(outFileName) == 0 {
+		_, err = os.Stdout.Write(outBuffer.Bytes())
+	} else {
+		err = os.WriteFile(outFileName, outBuffer.Bytes(), 0600)
+	}
 	if err != nil {
 		return fmt.Errorf("failed to save certificate: %w", err)
 	}
@@ -626,9 +630,6 @@ func genCRL(c *cli.Context) error {
 		return fmt.Errorf("validity must be a positive number")
 	}
 	outFileName := c.String("out")
-	if outFileName == "" {
-		return fmt.Errorf("output file name is required")
-	}
 	caKeyName := c.String("ca-key")
 	if caKeyName == "" {
 		caKeyName = strings.TrimSuffix(caCertName, filepath.Ext(caCertName)) + ".key"
@@ -636,7 +637,7 @@ func genCRL(c *cli.Context) error {
 	caPassword := c.String("ca-password")
 	certNames := c.StringSlice("cert")
 
-	pemBytes, err := ioutil.ReadFile(caCertName)
+	pemBytes, err := os.ReadFile(caCertName)
 	if err != nil {
 		return fmt.Errorf("failed to load certificate authority certificate: %w", err)
 	}
@@ -651,7 +652,7 @@ func genCRL(c *cli.Context) error {
 		return fmt.Errorf("failed to parse certificate authority certificate: %w", err)
 	}
 
-	pemBytes, err = ioutil.ReadFile(caKeyName)
+	pemBytes, err = os.ReadFile(caKeyName)
 	if err != nil {
 		return fmt.Errorf("failed to load certificate authority private key: %w", err)
 	}
@@ -690,7 +691,7 @@ func genCRL(c *cli.Context) error {
 	var revokedCertificates []pkix.RevokedCertificate
 
 	if _, err := os.Stat(outFileName); !os.IsNotExist(err) {
-		crlBytes, err := ioutil.ReadFile(outFileName)
+		crlBytes, err := os.ReadFile(outFileName)
 		if err != nil {
 			return fmt.Errorf("failed to load original crl: %w", err)
 		}
@@ -702,7 +703,7 @@ func genCRL(c *cli.Context) error {
 	}
 
 	for _, certName := range certNames {
-		pemBytes, err := ioutil.ReadFile(certName)
+		pemBytes, err := os.ReadFile(certName)
 		if err != nil {
 			return fmt.Errorf("failed to load certificate: %w", err)
 		}
@@ -742,7 +743,11 @@ func genCRL(c *cli.Context) error {
 		return fmt.Errorf("failed to encode certificate revogation list: %w", err)
 	}
 	outWriter.Flush()
-	err = ioutil.WriteFile(outFileName, outBuffer.Bytes(), 0644)
+	if len(outFileName) == 0 {
+		_, err = os.Stdout.Write(outBuffer.Bytes())
+	} else {
+		err = os.WriteFile(outFileName, outBuffer.Bytes(), 0600)
+	}
 	if err != nil {
 		return fmt.Errorf("failed to save certificate revogation list: %w", err)
 	}
@@ -761,12 +766,8 @@ func genPkcs(c *cli.Context) error {
 	}
 	password := c.String("password")
 	caCertNames := c.StringSlice("ca-cert")
-	outName := c.String("out")
-	if outName == "" {
-		return fmt.Errorf("output file name is required")
-	}
-
-	certPemBytes, err := ioutil.ReadFile(certName)
+	outFileName := c.String("out")
+	certPemBytes, err := os.ReadFile(certName)
 	if err != nil {
 		return fmt.Errorf("failed to load certificate: %w", err)
 	}
@@ -781,7 +782,7 @@ func genPkcs(c *cli.Context) error {
 		return fmt.Errorf("failed to parse certificate : %w", err)
 	}
 
-	keyPemBytes, err := ioutil.ReadFile(keyName)
+	keyPemBytes, err := os.ReadFile(keyName)
 	if err != nil {
 		return fmt.Errorf("failed to load private key: %w", err)
 	}
@@ -809,7 +810,7 @@ func genPkcs(c *cli.Context) error {
 	var caCerts []*x509.Certificate
 
 	for _, certName := range caCertNames {
-		pemBytes, err := ioutil.ReadFile(certName)
+		pemBytes, err := os.ReadFile(certName)
 		if err != nil {
 			return fmt.Errorf("failed to load certificate: %w", err)
 		}
@@ -829,7 +830,11 @@ func genPkcs(c *cli.Context) error {
 		return fmt.Errorf("failed to encode pcks12: %w", err)
 	}
 
-	err = ioutil.WriteFile(outName, pfxBytes, 0644)
+	if len(outFileName) == 0 {
+		_, err = os.Stdout.Write(pfxBytes)
+	} else {
+		err = os.WriteFile(outFileName, pfxBytes, 0600)
+	}
 	if err != nil {
 		return fmt.Errorf("failed to save pkcs12: %w", err)
 	}
@@ -858,7 +863,7 @@ func signRequest(c *cli.Context, configure func(*x509.Certificate) error) error 
 	crls := c.StringSlice("crl")
 	ocsps := c.StringSlice("ocsp")
 
-	pemBytes, err := ioutil.ReadFile(csrName)
+	pemBytes, err := os.ReadFile(csrName)
 	if err != nil {
 		return fmt.Errorf("failed to load certificate request: %w", err)
 	}
@@ -877,7 +882,7 @@ func signRequest(c *cli.Context, configure func(*x509.Certificate) error) error 
 		return fmt.Errorf("common name field is required")
 	}
 
-	pemBytes, err = ioutil.ReadFile(caCertName)
+	pemBytes, err = os.ReadFile(caCertName)
 	if err != nil {
 		return fmt.Errorf("failed to load certificate authority certificate: %w", err)
 	}
@@ -892,7 +897,7 @@ func signRequest(c *cli.Context, configure func(*x509.Certificate) error) error 
 		return fmt.Errorf("failed to parse certificate authority certificate: %w", err)
 	}
 
-	pemBytes, err = ioutil.ReadFile(caKeyName)
+	pemBytes, err = os.ReadFile(caKeyName)
 	if err != nil {
 		return fmt.Errorf("failed to load certificate authority private key: %w", err)
 	}
@@ -1005,7 +1010,7 @@ func signRequest(c *cli.Context, configure func(*x509.Certificate) error) error 
 		return fmt.Errorf("failed to encode certificate: %w", err)
 	}
 	outWriter.Flush()
-	err = ioutil.WriteFile(outName, outBuffer.Bytes(), 0644)
+	err = os.WriteFile(outName, outBuffer.Bytes(), 0644)
 	if err != nil {
 		return fmt.Errorf("failed to save certificate: %w", err)
 	}
