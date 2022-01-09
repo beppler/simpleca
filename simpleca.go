@@ -86,7 +86,7 @@ func main() {
 		},
 		{
 			Name:  "crl",
-			Usage: "Create a certificate revogation list (CRL)",
+			Usage: "Create/Update a certificate revogation list (CRL)",
 			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:  "ca-cert",
