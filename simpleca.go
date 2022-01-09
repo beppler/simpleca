@@ -82,7 +82,7 @@ func main() {
 					Usage: "Certificate request output file `NAME`",
 				},
 			},
-			Action: genCSR,
+			Action: createCSR,
 		},
 		{
 			Name:  "crl",
@@ -114,7 +114,7 @@ func main() {
 					Usage: "Certificate revogation list output file `NAME`",
 				},
 			},
-			Action: genCRL,
+			Action: createCRL,
 		},
 		{
 			Name:  "key",
@@ -165,7 +165,7 @@ func main() {
 							Usage: "PKCS12 output file `NAME`",
 						},
 					},
-					Action: genPkcs,
+					Action: encodePkcs,
 				},
 			},
 		},
@@ -390,7 +390,7 @@ func genKey(c *cli.Context) error {
 	return nil
 }
 
-func genCSR(c *cli.Context) error {
+func createCSR(c *cli.Context) error {
 	keyName := c.String("key")
 	if keyName == "" {
 		return fmt.Errorf("private key file name is required")
@@ -498,7 +498,7 @@ func genCSR(c *cli.Context) error {
 	return nil
 }
 
-func genCRL(c *cli.Context) error {
+func createCRL(c *cli.Context) error {
 	caCertName := c.String("ca-cert")
 	if caCertName == "" {
 		return fmt.Errorf("certificate authority certificate file name is required")
@@ -634,7 +634,7 @@ func genCRL(c *cli.Context) error {
 	return nil
 }
 
-func genPkcs(c *cli.Context) error {
+func encodePkcs(c *cli.Context) error {
 	certName := c.String("cert")
 	if certName == "" {
 		return fmt.Errorf("certificate file name is required")
