@@ -34,8 +34,9 @@ func main() {
 			Usage: "Create a certificate request",
 			Flags: []cli.Flag{
 				&cli.StringFlag{
-					Name:  "key",
-					Usage: "RSA private key file `NAME`",
+					Name:     "key",
+					Usage:    "RSA private key file `NAME`",
+					Required: true,
 				},
 				&cli.StringFlag{
 					Name:  "password",
@@ -89,8 +90,9 @@ func main() {
 			Usage: "Create/Update a certificate revogation list (CRL)",
 			Flags: []cli.Flag{
 				&cli.StringFlag{
-					Name:  "ca-cert",
-					Usage: "Certificate authority certificate file `NAME`",
+					Name:     "ca-cert",
+					Usage:    "Certificate authority certificate file `NAME`",
+					Required: true,
 				},
 				&cli.StringFlag{
 					Name:  "ca-key",
@@ -145,12 +147,14 @@ func main() {
 					Usage: "Encode a PKCS12 file from certificate and private key",
 					Flags: []cli.Flag{
 						&cli.StringFlag{
-							Name:  "cert",
-							Usage: "Certificate file `NAME`",
+							Name:     "cert",
+							Usage:    "Certificate file `NAME`",
+							Required: true,
 						},
 						&cli.StringFlag{
-							Name:  "key",
-							Usage: "Private key file `NAME`",
+							Name:     "key",
+							Usage:    "Private key file `NAME`",
+							Required: true,
 						},
 						&cli.StringFlag{
 							Name:  "password",
@@ -178,8 +182,9 @@ func main() {
 					Usage: "Sign a certificate authority request",
 					Flags: []cli.Flag{
 						&cli.StringFlag{
-							Name:  "csr",
-							Usage: "Certificate request file `NAME`",
+							Name:     "csr",
+							Usage:    "Certificate request file `NAME`",
+							Required: true,
 						},
 						&cli.StringFlag{
 							Name:  "ca-cert",
@@ -219,8 +224,9 @@ func main() {
 					Usage: "Sign a code signing certificate request",
 					Flags: []cli.Flag{
 						&cli.StringFlag{
-							Name:  "csr",
-							Usage: "Certificate request file `NAME`",
+							Name:     "csr",
+							Usage:    "Certificate request file `NAME`",
+							Required: true,
 						},
 						&cli.StringFlag{
 							Name:  "ca-cert",
@@ -259,8 +265,9 @@ func main() {
 					Usage: "Sign a server certificate request",
 					Flags: []cli.Flag{
 						&cli.StringFlag{
-							Name:  "csr",
-							Usage: "Certificate request file `NAME`",
+							Name:     "csr",
+							Usage:    "Certificate request file `NAME`",
+							Required: true,
 						},
 						&cli.StringFlag{
 							Name:  "ca-cert",
@@ -299,8 +306,9 @@ func main() {
 					Usage: "Sign a user certificate request",
 					Flags: []cli.Flag{
 						&cli.StringFlag{
-							Name:  "csr",
-							Usage: "Certificate request file `NAME`",
+							Name:     "csr",
+							Usage:    "Certificate request file `NAME`",
+							Required: true,
 						},
 						&cli.StringFlag{
 							Name:  "ca-cert",
@@ -392,9 +400,6 @@ func genKey(c *cli.Context) error {
 
 func createCSR(c *cli.Context) error {
 	keyName := c.String("key")
-	if keyName == "" {
-		return fmt.Errorf("private key file name is required")
-	}
 	password := c.String("password")
 	country := c.String("country")
 	province := c.String("province")
@@ -500,9 +505,6 @@ func createCSR(c *cli.Context) error {
 
 func createCRL(c *cli.Context) error {
 	caCertName := c.String("ca-cert")
-	if caCertName == "" {
-		return fmt.Errorf("certificate authority certificate file name is required")
-	}
 	validity := c.Int("validity")
 	if validity < 0 {
 		return fmt.Errorf("validity must be a positive number")
@@ -636,13 +638,7 @@ func createCRL(c *cli.Context) error {
 
 func encodePkcs(c *cli.Context) error {
 	certName := c.String("cert")
-	if certName == "" {
-		return fmt.Errorf("certificate file name is required")
-	}
 	keyName := c.String("key")
-	if keyName == "" {
-		return fmt.Errorf("private key name is required")
-	}
 	password := c.String("password")
 	caCertNames := c.StringSlice("ca-cert")
 	outFileName := c.String("out")
@@ -785,9 +781,6 @@ func signUser(c *cli.Context) error {
 
 func signRequest(c *cli.Context, allowSelfSign bool, configure func(*x509.Certificate) error) error {
 	csrName := c.String("csr")
-	if csrName == "" {
-		return fmt.Errorf("certificate request file name is required")
-	}
 	caCertName := c.String("ca-cert")
 	if !allowSelfSign && caCertName == "" {
 		return fmt.Errorf("certificate authority certificate file name is required")
