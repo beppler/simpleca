@@ -727,10 +727,6 @@ func signCA(c *cli.Context) error {
 	if maxPathLen < 0 {
 		return fmt.Errorf("path length must be equal or greater than 0")
 	}
-	validity := c.Int("validity")
-	if validity < 1 {
-		return fmt.Errorf("validity must be a positive number")
-	}
 
 	configure := func(template *x509.Certificate) error {
 		template.IsCA = true
@@ -738,7 +734,6 @@ func signCA(c *cli.Context) error {
 		template.MaxPathLen = maxPathLen
 		template.MaxPathLenZero = c.IsSet("max-path-len")
 		template.BasicConstraintsValid = true
-		template.NotAfter = template.NotBefore.AddDate(validity, 0, 0)
 		template.KeyUsage = x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign | x509.KeyUsageCRLSign
 		template.DNSNames = nil
 		template.IPAddresses = nil
@@ -750,13 +745,7 @@ func signCA(c *cli.Context) error {
 }
 
 func signCode(c *cli.Context) error {
-	validity := c.Int("validity")
-	if validity < 1 {
-		return fmt.Errorf("validity must be a positive number")
-	}
-
 	configure := func(template *x509.Certificate) error {
-		template.NotAfter = template.NotBefore.AddDate(validity, 0, 0)
 		template.KeyUsage = x509.KeyUsageDigitalSignature
 		template.ExtKeyUsage = []x509.ExtKeyUsage{x509.ExtKeyUsageCodeSigning}
 		template.DNSNames = nil
@@ -769,13 +758,7 @@ func signCode(c *cli.Context) error {
 }
 
 func signServer(c *cli.Context) error {
-	validity := c.Int("validity")
-	if validity < 1 {
-		return fmt.Errorf("validity must be a positive number")
-	}
-
 	configure := func(template *x509.Certificate) error {
-		template.NotAfter = template.NotBefore.AddDate(validity, 0, 0)
 		template.KeyUsage = x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature | x509.KeyUsageKeyAgreement
 		template.ExtKeyUsage = []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}
 		template.EmailAddresses = nil
@@ -789,13 +772,7 @@ func signServer(c *cli.Context) error {
 }
 
 func signUser(c *cli.Context) error {
-	validity := c.Int("validity")
-	if validity < 1 {
-		return fmt.Errorf("validity must be a positive number")
-	}
-
 	configure := func(template *x509.Certificate) error {
-		template.NotAfter = template.NotBefore.AddDate(validity, 0, 0)
 		template.KeyUsage = x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment | x509.KeyUsageContentCommitment
 		template.ExtKeyUsage = []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageEmailProtection}
 		template.DNSNames = nil
@@ -826,6 +803,10 @@ func signRequest(c *cli.Context, allowSelfSign bool, configure func(*x509.Certif
 		}
 	}
 	caPassword := c.String("ca-password")
+	validity := c.Int("validity")
+	if validity < 1 {
+		return fmt.Errorf("validity must be a positive number")
+	}
 	crls := c.StringSlice("crl")
 	outFileName := c.String("out")
 
@@ -891,7 +872,7 @@ func signRequest(c *cli.Context, allowSelfSign bool, configure func(*x509.Certif
 		EmailAddresses:        request.EmailAddresses,
 		CRLDistributionPoints: crls,
 		NotBefore:             now,
-		NotAfter:              now,
+		NotAfter:              now.AddDate(validity, 0, 0),
 	}
 
 	var caCert *x509.Certificate
