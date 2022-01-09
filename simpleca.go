@@ -197,10 +197,6 @@ func main() {
 							Name:  "crl",
 							Usage: "CRL distribution points `URI` for certificate",
 						},
-						&cli.StringSliceFlag{
-							Name:  "ocsp",
-							Usage: "OCSP servers `URI` for certificate",
-						},
 						&cli.IntFlag{
 							Name:  "max-path-len",
 							Usage: "Maximum number of subordinate CAs (-1 for no limit)",
@@ -831,7 +827,6 @@ func signRequest(c *cli.Context, allowSelfSign bool, configure func(*x509.Certif
 	}
 	caPassword := c.String("ca-password")
 	crls := c.StringSlice("crl")
-	ocsps := c.StringSlice("ocsp")
 	outFileName := c.String("out")
 
 	pemBytes, err := os.ReadFile(csrName)
@@ -895,7 +890,6 @@ func signRequest(c *cli.Context, allowSelfSign bool, configure func(*x509.Certif
 		IPAddresses:           request.IPAddresses,
 		EmailAddresses:        request.EmailAddresses,
 		CRLDistributionPoints: crls,
-		OCSPServer:            ocsps,
 		NotBefore:             now,
 		NotAfter:              now,
 	}
@@ -947,14 +941,6 @@ func signRequest(c *cli.Context, allowSelfSign bool, configure func(*x509.Certif
 				template.CRLDistributionPoints = append(template.CRLDistributionPoints, scanner.Text())
 			}
 			file.Close()
-		}
-
-		ocspsName := strings.TrimSuffix(caKeyName, filepath.Ext(caKeyName)) + ".ocsps.txt"
-		if file, err := os.Open(ocspsName); err == nil {
-			scanner := bufio.NewScanner(file)
-			for scanner.Scan() {
-				template.CRLDistributionPoints = append(template.CRLDistributionPoints, scanner.Text())
-			}
 		}
 	}
 
