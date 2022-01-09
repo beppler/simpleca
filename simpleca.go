@@ -199,7 +199,7 @@ func main() {
 						},
 						&cli.IntFlag{
 							Name:  "max-path-len",
-							Usage: "Maximum number of subordinate CAs (-1 for no limit)",
+							Usage: "Maximum number of subordinate CAs",
 							Value: 0,
 						},
 						&cli.IntFlag{
