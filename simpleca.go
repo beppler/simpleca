@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -431,17 +432,7 @@ func createCSR(c *cli.Context) error {
 		return fmt.Errorf("failed to decode private key")
 	}
 
-	var keyBytes []byte
-	if password == "" {
-		keyBytes = keyPemBlock.Bytes
-	} else {
-		keyBytes, err = pemutil.DecryptPEMBlock(keyPemBlock, []byte(password))
-		if err != nil {
-			return fmt.Errorf("failed to decrypt private key: %w", err)
-		}
-	}
-
-	privateKey, err := x509.ParsePKCS1PrivateKey(keyBytes)
+	privateKey, err := parsePrivateKey(keyPemBlock, password)
 	if err != nil {
 		return fmt.Errorf("failed to parse private key: %w", err)
 	}
@@ -542,17 +533,7 @@ func createCRL(c *cli.Context) error {
 		return fmt.Errorf("failed to decode certificate authority private key")
 	}
 
-	var keyBytes []byte
-	if caPassword == "" {
-		keyBytes = keyPemBlock.Bytes
-	} else {
-		keyBytes, err = pemutil.DecryptPEMBlock(keyPemBlock, []byte(caPassword))
-		if err != nil {
-			return fmt.Errorf("failed to decrypt certificate authority private key: %w", err)
-		}
-	}
-
-	privateKey, err := x509.ParsePKCS1PrivateKey(keyBytes)
+	privateKey, err := parsePrivateKey(keyPemBlock, caPassword)
 	if err != nil {
 		return fmt.Errorf("failed to parse certificate authority private key: %w", err)
 	}
@@ -668,19 +649,9 @@ func encodePkcs(c *cli.Context) error {
 		return fmt.Errorf("failed to decode private key")
 	}
 
-	var keyBytes []byte
-	if password == "" {
-		keyBytes = keyPemBlock.Bytes
-	} else {
-		keyBytes, err = pemutil.DecryptPEMBlock(keyPemBlock, []byte(password))
-		if err != nil {
-			return fmt.Errorf("failed to decrypt certificate authority private key: %w", err)
-		}
-	}
-
-	key, err := x509.ParsePKCS1PrivateKey(keyBytes)
+	key, err := parsePrivateKey(keyPemBlock, password)
 	if err != nil {
-		return fmt.Errorf("failed to parse certificate authority private key: %w", err)
+		return fmt.Errorf("failed to parse private key: %w", err)
 	}
 
 	var caCerts []*x509.Certificate
@@ -832,17 +803,7 @@ func signRequest(c *cli.Context, allowSelfSign bool, configure func(*x509.Certif
 		return fmt.Errorf("failed to decode certificate authority private key")
 	}
 
-	var keyBytes []byte
-	if caPassword == "" {
-		keyBytes = keyPemBlock.Bytes
-	} else {
-		keyBytes, err = pemutil.DecryptPEMBlock(keyPemBlock, []byte(caPassword))
-		if err != nil {
-			return fmt.Errorf("failed to decrypt certificate authority private key: %w", err)
-		}
-	}
-
-	caKey, err := x509.ParsePKCS1PrivateKey(keyBytes)
+	caKey, err := parsePrivateKey(keyPemBlock, caPassword)
 	if err != nil {
 		return fmt.Errorf("failed to parse certificate authority private key: %w", err)
 	}
@@ -945,4 +906,26 @@ func signRequest(c *cli.Context, allowSelfSign bool, configure func(*x509.Certif
 	}
 
 	return nil
+}
+
+func parsePrivateKey(keyPemBlock *pem.Block, password string) (crypto.PrivateKey, error) {
+	var keyBytes []byte
+	var err error
+	if password == "" {
+		keyBytes = keyPemBlock.Bytes
+	} else {
+		keyBytes, err = pemutil.DecryptPEMBlock(keyPemBlock, []byte(password))
+		if err != nil {
+			return nil, fmt.Errorf("failed to decrypt certificate authority private key: %w", err)
+		}
+	}
+
+	switch keyPemBlock.Type {
+	case "RSA PRIVATE KEY":
+		return x509.ParsePKCS1PrivateKey(keyBytes)
+	case "EC PRIVATE KEY":
+		return x509.ParseECPrivateKey(keyBytes)
+	default:
+		return nil, fmt.Errorf("unsupported private key type: %s", keyPemBlock.Type)
+	}
 }
