@@ -6,11 +6,11 @@ Autoridade Certificadora simples escrita em Go.
 
 ### Binários
 
-Os binários para Windows e Linux podem ser obtidos na seção de Releases deste repositório.
+Os binários para Windows, MacOS e Linux podem ser obtidos na seção de Releases deste repositório.
 
 ### Fontes
 
-Para instalar a partir dos fontes é necessário ter o compilador de [Go](https://golang.org) versão 1.13 ou superior.
+Para instalar a partir dos fontes é necessário ter o compilador de [Go](https://golang.org) versão 1.17 ou superior.
 
 Com isso pode ser executado o seguinte comando:
 
