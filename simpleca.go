@@ -137,7 +137,7 @@ func main() {
 					Usage: "RSA private key output file `NAME`",
 				},
 			},
-			Action: genKey,
+			Action: createKey,
 		},
 		{
 			Name:  "pkcs",
@@ -354,7 +354,7 @@ func main() {
 	}
 }
 
-func genKey(c *cli.Context) error {
+func createKey(c *cli.Context) error {
 	size := c.Int("size")
 	if size < 1024 {
 		return fmt.Errorf("key size must be at least 1024 bits")
