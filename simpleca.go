@@ -36,7 +36,7 @@ func main() {
 			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:     "key",
-					Usage:    "RSA private key file `NAME`",
+					Usage:    "Private key file `NAME`",
 					Required: true,
 				},
 				&cli.StringFlag{
@@ -97,7 +97,7 @@ func main() {
 				},
 				&cli.StringFlag{
 					Name:  "ca-key",
-					Usage: "Certificare authority RSA private key file `NAME`",
+					Usage: "Certificare authority private key file `NAME`",
 				},
 				&cli.StringFlag{
 					Name:  "ca-password",
@@ -121,23 +121,29 @@ func main() {
 		},
 		{
 			Name:  "key",
-			Usage: "Create a RSA private key",
-			Flags: []cli.Flag{
-				&cli.IntFlag{
-					Name:  "size",
-					Usage: "private key `SIZE` (in bits)",
-					Value: 2048,
-				},
-				&cli.StringFlag{
-					Name:  "password",
-					Usage: "private key `PASSWORD`",
-				},
-				&cli.StringFlag{
-					Name:  "out",
-					Usage: "RSA private key output file `NAME`",
+			Usage: "Private key support",
+			Subcommands: []*cli.Command{
+				{
+					Name:  "create",
+					Usage: "Create a new RSA private key",
+					Flags: []cli.Flag{
+						&cli.IntFlag{
+							Name:  "size",
+							Usage: "private key `SIZE` (in bits)",
+							Value: 2048,
+						},
+						&cli.StringFlag{
+							Name:  "password",
+							Usage: "private key `PASSWORD`",
+						},
+						&cli.StringFlag{
+							Name:  "out",
+							Usage: "Private key output file `NAME`",
+						},
+					},
+					Action: createKey,
 				},
 			},
-			Action: createKey,
 		},
 		{
 			Name:  "pkcs",
@@ -193,7 +199,7 @@ func main() {
 						},
 						&cli.StringFlag{
 							Name:  "ca-key",
-							Usage: "Certificare authority RSA private key file `NAME`",
+							Usage: "Certificare authority private key file `NAME`",
 						},
 						&cli.StringFlag{
 							Name:  "ca-password",
@@ -235,7 +241,7 @@ func main() {
 						},
 						&cli.StringFlag{
 							Name:  "ca-key",
-							Usage: "Certificare authority RSA private key file `NAME`",
+							Usage: "Certificare authority private key file `NAME`",
 						},
 						&cli.StringFlag{
 							Name:  "ca-password",
@@ -276,7 +282,7 @@ func main() {
 						},
 						&cli.StringFlag{
 							Name:  "ca-key",
-							Usage: "Certificare authority RSA private key file `NAME`",
+							Usage: "Certificare authority private key file `NAME`",
 						},
 						&cli.StringFlag{
 							Name:  "ca-password",
@@ -317,7 +323,7 @@ func main() {
 						},
 						&cli.StringFlag{
 							Name:  "ca-key",
-							Usage: "Certificare authority RSA private key file `NAME`",
+							Usage: "Certificare authority private key file `NAME`",
 						},
 						&cli.StringFlag{
 							Name:  "ca-password",
