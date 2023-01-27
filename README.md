@@ -10,7 +10,7 @@ Os binários para Windows, MacOS e Linux podem ser obtidos na seção de Release
 
 ### Fontes
 
-Para instalar a partir dos fontes é necessário ter o compilador de [Go](https://golang.org) versão 1.17 ou superior.
+Para instalar a partir dos fontes é necessário ter o compilador de [Go](https://golang.org) versão 1.19 ou superior.
 
 Com isso pode ser executado o seguinte comando:
 
