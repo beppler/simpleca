@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"bytes"
 	"crypto"
+	"crypto/ecdsa"
+	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -19,6 +21,7 @@ import (
 
 	"github.com/urfave/cli/v2"
 	"go.step.sm/crypto/pemutil"
+	"golang.org/x/exp/slices"
 	"software.sslmate.com/src/go-pkcs12"
 )
 
@@ -125,16 +128,28 @@ func main() {
 			Subcommands: []*cli.Command{
 				{
 					Name:  "create",
-					Usage: "Create a new RSA private key",
+					Usage: "Create a new private key",
 					Flags: []cli.Flag{
+						&cli.StringFlag{
+							Name:        "type",
+							Usage:       "Private key `TYPE` (ecdsa or rsa)",
+							DefaultText: "ecdsa",
+							Action: func(ctx *cli.Context, v string) error {
+								types := []string{"ecdsa", "rsa"}
+								if !slices.Contains(types, v) {
+									return fmt.Errorf("private key type value %v out of range (%v)", v, strings.Join(types, ", "))
+								}
+								return nil
+							},
+						},
 						&cli.IntFlag{
 							Name:  "size",
-							Usage: "private key `SIZE` (in bits)",
+							Usage: "Private key `SIZE` (in bits for RSA)",
 							Value: 2048,
 						},
 						&cli.StringFlag{
 							Name:  "password",
-							Usage: "private key `PASSWORD`",
+							Usage: "Private key `PASSWORD`",
 						},
 						&cli.StringFlag{
 							Name:  "out",
@@ -361,33 +376,53 @@ func main() {
 }
 
 func createKey(c *cli.Context) error {
-	size := c.Int("size")
-	if size < 1024 {
-		return fmt.Errorf("key size must be at least 1024 bits")
-	}
+	keyType := c.String("type")
 	password := c.String("password")
 	outFileName := c.String("out")
 
-	privateKey, err := rsa.GenerateKey(rand.Reader, size)
-	if err != nil {
-		return fmt.Errorf("failed to generate private key: %w", err)
-	}
-
-	keyBytes := x509.MarshalPKCS1PrivateKey(privateKey)
-
 	var keyPemBlock *pem.Block
-	if password == "" {
-		keyPemBlock = &pem.Block{Type: "RSA PRIVATE KEY", Bytes: keyBytes}
-	} else {
-		keyPemBlock, err = pemutil.EncryptPKCS8PrivateKey(rand.Reader, keyBytes, []byte(password), x509.PEMCipherAES256)
+	if keyType == "ecdsa" || keyType == "" {
+		privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 		if err != nil {
-			return fmt.Errorf("failed to encrypt private key: %s", err)
+			return fmt.Errorf("failed to generate private key: %w", err)
 		}
+		keyBytes, err := x509.MarshalECPrivateKey(privateKey)
+		if err != nil {
+			return fmt.Errorf("filed to marshal private key: %w", err)
+		}
+		if password == "" {
+			keyPemBlock = &pem.Block{Type: "EC PRIVATE KEY", Bytes: keyBytes}
+		} else {
+			keyPemBlock, err = pemutil.EncryptPKCS8PrivateKey(rand.Reader, keyBytes, []byte(password), x509.PEMCipherAES256)
+			if err != nil {
+				return fmt.Errorf("failed to encrypt private key: %s", err)
+			}
+		}
+	} else if keyType == "rsa" {
+		size := c.Int("size")
+		if size < 1024 {
+			return fmt.Errorf("key size must be at least 1024 bits")
+		}
+		privateKey, err := rsa.GenerateKey(rand.Reader, size)
+		if err != nil {
+			return fmt.Errorf("failed to generate private key: %w", err)
+		}
+		keyBytes := x509.MarshalPKCS1PrivateKey(privateKey)
+		if password == "" {
+			keyPemBlock = &pem.Block{Type: "RSA PRIVATE KEY", Bytes: keyBytes}
+		} else {
+			keyPemBlock, err = pemutil.EncryptPKCS8PrivateKey(rand.Reader, keyBytes, []byte(password), x509.PEMCipherAES256)
+			if err != nil {
+				return fmt.Errorf("failed to encrypt private key: %s", err)
+			}
+		}
+	} else {
+		return fmt.Errorf("invalid private key type: %v", keyType)
 	}
 
 	var outBuffer bytes.Buffer
 	outWriter := bufio.NewWriter(&outBuffer)
-	err = pem.Encode(outWriter, keyPemBlock)
+	err := pem.Encode(outWriter, keyPemBlock)
 	if err != nil {
 		return fmt.Errorf("failed to encode private key: %w", err)
 	}
