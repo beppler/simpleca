@@ -35,6 +35,49 @@ func main() {
 	app.Version = version
 	app.Commands = []*cli.Command{
 		{
+			Name:  "crl",
+			Usage: "Create/Update a certificate revogation list (CRL)",
+			Flags: []cli.Flag{
+				&cli.StringFlag{
+					Name:     "ca-cert",
+					Usage:    "Certificate authority certificate file `NAME`",
+					Required: true,
+				},
+				&cli.StringFlag{
+					Name:  "ca-key",
+					Usage: "Certificare authority private key file `NAME`",
+				},
+				&cli.StringFlag{
+					Name:  "ca-password",
+					Usage: "private key password",
+				},
+				&cli.IntFlag{
+					Name:  "validity",
+					Usage: "Validity time in `days` (0 to copy certificate authority validity)",
+					Value: 7,
+					Action: func(ctx *cli.Context, validity int) error {
+						if validity < 1 {
+							return fmt.Errorf("validity must be a positive number")
+						}
+						return nil
+					},
+				},
+				&cli.StringSliceFlag{
+					Name:  "cert",
+					Usage: "Certificate to be included on CRL",
+				},
+				&cli.StringFlag{
+					Name:  "in",
+					Usage: "Certificate revogation list input file `NAME`",
+				},
+				&cli.StringFlag{
+					Name:  "out",
+					Usage: "Certificate revogation list output file `NAME`",
+				},
+			},
+			Action: createCRL,
+		},
+		{
 			Name:  "csr",
 			Usage: "Create a certificate request",
 			Flags: []cli.Flag{
@@ -89,39 +132,6 @@ func main() {
 				},
 			},
 			Action: createCSR,
-		},
-		{
-			Name:  "crl",
-			Usage: "Create/Update a certificate revogation list (CRL)",
-			Flags: []cli.Flag{
-				&cli.StringFlag{
-					Name:     "ca-cert",
-					Usage:    "Certificate authority certificate file `NAME`",
-					Required: true,
-				},
-				&cli.StringFlag{
-					Name:  "ca-key",
-					Usage: "Certificare authority private key file `NAME`",
-				},
-				&cli.StringFlag{
-					Name:  "ca-password",
-					Usage: "private key password",
-				},
-				&cli.IntFlag{
-					Name:  "validity",
-					Usage: "Validity time in `days` (0 to copy certificate authority validity)",
-					Value: 7,
-				},
-				&cli.StringSliceFlag{
-					Name:  "cert",
-					Usage: "Certificate to be included on CRL",
-				},
-				&cli.StringFlag{
-					Name:  "out",
-					Usage: "Certificate revogation list output file `NAME`",
-				},
-			},
-			Action: createCRL,
 		},
 		{
 			Name:  "key",
@@ -258,11 +268,23 @@ func main() {
 							Name:  "max-path-len",
 							Usage: "Maximum number of subordinate CAs",
 							Value: 0,
+							Action: func(ctx *cli.Context, maxPathLen int) error {
+								if maxPathLen < 0 {
+									return fmt.Errorf("path length must be equal or greater than 0")
+								}
+								return nil
+							},
 						},
 						&cli.IntFlag{
 							Name:  "validity",
 							Usage: "Validity time in `YEARS`",
 							Value: 5,
+							Action: func(ctx *cli.Context, validity int) error {
+								if validity < 1 {
+									return fmt.Errorf("validity must be a positive number")
+								}
+								return nil
+							},
 						},
 						&cli.StringFlag{
 							Name:  "out",
@@ -304,6 +326,12 @@ func main() {
 							Name:  "validity",
 							Usage: "Validity time in `YEARS`",
 							Value: 2,
+							Action: func(ctx *cli.Context, validity int) error {
+								if validity < 1 {
+									return fmt.Errorf("validity must be a positive number")
+								}
+								return nil
+							},
 						},
 						&cli.StringFlag{
 							Name:  "out",
@@ -345,6 +373,12 @@ func main() {
 							Name:  "validity",
 							Usage: "Validity time in `YEARS`",
 							Value: 2,
+							Action: func(ctx *cli.Context, validity int) error {
+								if validity < 1 {
+									return fmt.Errorf("validity must be a positive number")
+								}
+								return nil
+							},
 						},
 						&cli.StringFlag{
 							Name:  "out",
@@ -386,6 +420,12 @@ func main() {
 							Name:  "validity",
 							Usage: "Validity time in `YEARS`",
 							Value: 2,
+							Action: func(ctx *cli.Context, validity int) error {
+								if validity < 1 {
+									return fmt.Errorf("validity must be a positive number")
+								}
+								return nil
+							},
 						},
 						&cli.StringFlag{
 							Name:  "out",
@@ -555,15 +595,13 @@ func createCSR(c *cli.Context) error {
 func createCRL(c *cli.Context) error {
 	caCertName := c.String("ca-cert")
 	validity := c.Int("validity")
-	if validity < 0 {
-		return fmt.Errorf("validity must be a positive number")
-	}
 	caKeyName := c.String("ca-key")
 	if caKeyName == "" {
 		caKeyName = strings.TrimSuffix(caCertName, filepath.Ext(caCertName)) + ".key"
 	}
 	caPassword := c.String("ca-password")
 	certNames := c.StringSlice("cert")
+	inFileName := c.String("in")
 	outFileName := c.String("out")
 
 	pemBytes, err := os.ReadFile(caCertName)
@@ -609,8 +647,8 @@ func createCRL(c *cli.Context) error {
 
 	var revokedCertificates []pkix.RevokedCertificate
 
-	if _, err := os.Stat(outFileName); !os.IsNotExist(err) {
-		crlBytes, err := os.ReadFile(outFileName)
+	if inFileName != "" {
+		crlBytes, err := os.ReadFile(inFileName)
 		if err != nil {
 			return fmt.Errorf("failed to load original crl: %w", err)
 		}
@@ -736,9 +774,6 @@ func encodePkcs(c *cli.Context) error {
 
 func signCA(c *cli.Context) error {
 	maxPathLen := c.Int("max-path-len")
-	if maxPathLen < 0 {
-		return fmt.Errorf("path length must be equal or greater than 0")
-	}
 
 	configure := func(template *x509.Certificate) error {
 		template.IsCA = true
@@ -813,9 +848,6 @@ func signRequest(c *cli.Context, allowSelfSign bool, configure func(*x509.Certif
 	}
 	caPassword := c.String("ca-password")
 	validity := c.Int("validity")
-	if validity < 1 {
-		return fmt.Errorf("validity must be a positive number")
-	}
 	crls := c.StringSlice("crl")
 	outFileName := c.String("out")
 
