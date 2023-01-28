@@ -13,6 +13,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	"math/big"
+	"math/bits"
 	"net"
 	"os"
 	"path/filepath"
@@ -128,35 +129,64 @@ func main() {
 			Subcommands: []*cli.Command{
 				{
 					Name:  "create",
-					Usage: "Create a new private key",
-					Flags: []cli.Flag{
-						&cli.StringFlag{
-							Name:        "type",
-							Usage:       "Private key `TYPE` (ecdsa or rsa)",
-							DefaultText: "ecdsa",
-							Action: func(ctx *cli.Context, v string) error {
-								types := []string{"ecdsa", "rsa"}
-								if !slices.Contains(types, v) {
-									return fmt.Errorf("private key type value %v out of range (%v)", v, strings.Join(types, ", "))
-								}
-								return nil
+					Usage: "Create private keys",
+					Subcommands: []*cli.Command{
+						{
+							Name:  "ecdsa",
+							Usage: "Create ECDSA private key",
+							Flags: []cli.Flag{
+								&cli.StringFlag{
+									Name:        "type",
+									Usage:       "Private key curve type `TYPE` (p256, p384, p521)",
+									Value:       "p384",
+									DefaultText: "p384",
+									Action: func(ctx *cli.Context, v string) error {
+										types := []string{"p256", "p384", "p521"}
+										if !slices.Contains(types, v) {
+											return fmt.Errorf("invalid curve type %v, valid types are %v", v, strings.Join(types, ", "))
+										}
+										return nil
+									},
+								},
+								&cli.StringFlag{
+									Name:  "password",
+									Usage: "Private key `PASSWORD`",
+								},
+								&cli.StringFlag{
+									Name:  "out",
+									Usage: "Private key output file `NAME`",
+								},
 							},
+							Action: createECDSAKey,
 						},
-						&cli.IntFlag{
-							Name:  "size",
-							Usage: "Private key `SIZE` (in bits for RSA)",
-							Value: 2048,
-						},
-						&cli.StringFlag{
-							Name:  "password",
-							Usage: "Private key `PASSWORD`",
-						},
-						&cli.StringFlag{
-							Name:  "out",
-							Usage: "Private key output file `NAME`",
+						{
+							Name:  "rsa",
+							Usage: "Create RSA private key",
+							Flags: []cli.Flag{
+								&cli.IntFlag{
+									Name:  "size",
+									Usage: "Private key `SIZE` (in bits for RSA)",
+									Value: 2048,
+									Action: func(ctx *cli.Context, v int) error {
+										quotient, remainder := bits.Div32(0, uint32(v), 1024)
+										if quotient < 1 || remainder != 0 {
+											return fmt.Errorf("key size must be at least 1024 bits and a multiple of 1024")
+										}
+										return nil
+									},
+								},
+								&cli.StringFlag{
+									Name:  "password",
+									Usage: "Private key `PASSWORD`",
+								},
+								&cli.StringFlag{
+									Name:  "out",
+									Usage: "Private key output file `NAME`",
+								},
+							},
+							Action: createRSAKey,
 						},
 					},
-					Action: createKey,
 				},
 			},
 		},
@@ -375,65 +405,60 @@ func main() {
 	}
 }
 
-func createKey(c *cli.Context) error {
-	keyType := c.String("type")
+func createECDSAKey(c *cli.Context) error {
+	curveType := c.String("type")
 	password := c.String("password")
 	outFileName := c.String("out")
 
-	var keyPemBlock *pem.Block
-	if keyType == "ecdsa" || keyType == "" {
-		privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-		if err != nil {
-			return fmt.Errorf("failed to generate private key: %w", err)
-		}
-		keyBytes, err := x509.MarshalECPrivateKey(privateKey)
-		if err != nil {
-			return fmt.Errorf("filed to marshal private key: %w", err)
-		}
-		if password == "" {
-			keyPemBlock = &pem.Block{Type: "EC PRIVATE KEY", Bytes: keyBytes}
-		} else {
-			keyPemBlock, err = pemutil.EncryptPKCS8PrivateKey(rand.Reader, keyBytes, []byte(password), x509.PEMCipherAES256)
-			if err != nil {
-				return fmt.Errorf("failed to encrypt private key: %s", err)
-			}
-		}
-	} else if keyType == "rsa" {
-		size := c.Int("size")
-		if size < 1024 {
-			return fmt.Errorf("key size must be at least 1024 bits")
-		}
-		privateKey, err := rsa.GenerateKey(rand.Reader, size)
-		if err != nil {
-			return fmt.Errorf("failed to generate private key: %w", err)
-		}
-		keyBytes := x509.MarshalPKCS1PrivateKey(privateKey)
-		if password == "" {
-			keyPemBlock = &pem.Block{Type: "RSA PRIVATE KEY", Bytes: keyBytes}
-		} else {
-			keyPemBlock, err = pemutil.EncryptPKCS8PrivateKey(rand.Reader, keyBytes, []byte(password), x509.PEMCipherAES256)
-			if err != nil {
-				return fmt.Errorf("failed to encrypt private key: %s", err)
-			}
-		}
-	} else {
-		return fmt.Errorf("invalid private key type: %v", keyType)
+	curve := map[string]elliptic.Curve{
+		"p256": elliptic.P256(),
+		"p384": elliptic.P384(),
+		"p521": elliptic.P521(),
+	}[curveType]
+
+	privateKey, err := ecdsa.GenerateKey(curve, rand.Reader)
+	if err != nil {
+		return fmt.Errorf("failed to generate private key: %w", err)
 	}
 
-	var outBuffer bytes.Buffer
-	outWriter := bufio.NewWriter(&outBuffer)
-	err := pem.Encode(outWriter, keyPemBlock)
+	keyPemBlock, err := marshalPrivateKey(privateKey, password)
+	if err != nil {
+		return fmt.Errorf("failed to marshal private key: %w", err)
+	}
+
+	keyPemBytes, err := encodePemBlock(keyPemBlock)
 	if err != nil {
 		return fmt.Errorf("failed to encode private key: %w", err)
 	}
-	outWriter.Flush()
 
-	if outFileName == "" {
-		_, err = os.Stdout.Write(outBuffer.Bytes())
-	} else {
-		err = os.WriteFile(outFileName, outBuffer.Bytes(), 0600)
+	if err := writeBytes(keyPemBytes, outFileName); err != nil {
+		return fmt.Errorf("failed to save private key: %w", err)
 	}
+
+	return nil
+}
+
+func createRSAKey(c *cli.Context) error {
+	size := c.Int("size")
+	password := c.String("password")
+	outFileName := c.String("out")
+
+	privateKey, err := rsa.GenerateKey(rand.Reader, size)
 	if err != nil {
+		return fmt.Errorf("failed to generate private key: %w", err)
+	}
+
+	keyPemBlock, err := marshalPrivateKey(privateKey, password)
+	if err != nil {
+		return fmt.Errorf("failed to marshal private key: %w", err)
+	}
+
+	keyPemBytes, err := encodePemBlock(keyPemBlock)
+	if err != nil {
+		return fmt.Errorf("failed to encode private key: %w", err)
+	}
+
+	if err := writeBytes(keyPemBytes, outFileName); err != nil {
 		return fmt.Errorf("failed to save private key: %w", err)
 	}
 
@@ -515,20 +540,12 @@ func createCSR(c *cli.Context) error {
 		return fmt.Errorf("failed to create certificate request: %w", err)
 	}
 
-	var outBuffer bytes.Buffer
-	outWriter := bufio.NewWriter(&outBuffer)
-	err = pem.Encode(outWriter, &pem.Block{Type: "CERTIFICATE REQUEST", Bytes: reqBytes})
+	reqPemBytes, err := encodePemBlock(&pem.Block{Type: "CERTIFICATE REQUEST", Bytes: reqBytes})
 	if err != nil {
 		return fmt.Errorf("failed to encode certificate request: %w", err)
 	}
-	outWriter.Flush()
 
-	if outFileName == "" {
-		_, err = os.Stdout.Write(outBuffer.Bytes())
-	} else {
-		err = os.WriteFile(outFileName, outBuffer.Bytes(), 0600)
-	}
-	if err != nil {
+	if err = writeBytes(reqPemBytes, outFileName); err != nil {
 		return fmt.Errorf("failed to save certificate request: %w", err)
 	}
 
@@ -638,20 +655,12 @@ func createCRL(c *cli.Context) error {
 		return fmt.Errorf("failed create certificate revogation list: %w", err)
 	}
 
-	var outBuffer bytes.Buffer
-	outWriter := bufio.NewWriter(&outBuffer)
-	err = pem.Encode(outWriter, &pem.Block{Type: "X509 CRL", Bytes: crlBytes})
+	crlPemBytes, err := encodePemBlock(&pem.Block{Type: "X509 CRL", Bytes: crlBytes})
 	if err != nil {
 		return fmt.Errorf("failed to encode certificate revogation list: %w", err)
 	}
-	outWriter.Flush()
 
-	if outFileName == "" {
-		_, err = os.Stdout.Write(outBuffer.Bytes())
-	} else {
-		err = os.WriteFile(outFileName, outBuffer.Bytes(), 0600)
-	}
-	if err != nil {
+	if err := writeBytes(crlPemBytes, outFileName); err != nil {
 		return fmt.Errorf("failed to save certificate revogation list: %w", err)
 	}
 
@@ -718,12 +727,7 @@ func encodePkcs(c *cli.Context) error {
 		return fmt.Errorf("failed to encode pcks12: %w", err)
 	}
 
-	if outFileName == "" {
-		_, err = os.Stdout.Write(pfxBytes)
-	} else {
-		err = os.WriteFile(outFileName, pfxBytes, 0600)
-	}
-	if err != nil {
+	if err := writeBytes(pfxBytes, outFileName); err != nil {
 		return fmt.Errorf("failed to save pkcs12: %w", err)
 	}
 
@@ -929,24 +933,53 @@ func signRequest(c *cli.Context, allowSelfSign bool, configure func(*x509.Certif
 		return fmt.Errorf("failed to create certificate: %w", err)
 	}
 
-	var outBuffer bytes.Buffer
-	outWriter := bufio.NewWriter(&outBuffer)
-	err = pem.Encode(outWriter, &pem.Block{Type: "CERTIFICATE", Bytes: certBytes})
+	certPemBytes, err := encodePemBlock(&pem.Block{Type: "CERTIFICATE", Bytes: certBytes})
 	if err != nil {
 		return fmt.Errorf("failed to encode certificate: %w", err)
 	}
-	outWriter.Flush()
 
-	if outFileName == "" {
-		_, err = os.Stdout.Write(outBuffer.Bytes())
-	} else {
-		err = os.WriteFile(outFileName, outBuffer.Bytes(), 0600)
-	}
-	if err != nil {
+	if err := writeBytes(certPemBytes, outFileName); err != nil {
 		return fmt.Errorf("failed to save certificate: %w", err)
 	}
 
 	return nil
+}
+
+func encodePemBlock(block *pem.Block) ([]byte, error) {
+	var buf bytes.Buffer
+	if err := pem.Encode(&buf, block); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+func marshalPrivateKey(privateKey crypto.PrivateKey, password string) (*pem.Block, error) {
+	var keyBytes []byte
+	var keyType string
+	var err error
+	switch key := privateKey.(type) {
+	case *rsa.PrivateKey:
+		keyBytes = x509.MarshalPKCS1PrivateKey(key)
+		keyType = "RSA PRIVATE KEY"
+	case *ecdsa.PrivateKey:
+		keyBytes, err = x509.MarshalECPrivateKey(key)
+		if err != nil {
+			return nil, fmt.Errorf("marshal ECDSA private key: %w", err)
+		}
+		keyType = "EC PRIVATE KEY"
+	default:
+		return nil, fmt.Errorf("unsupported private key type")
+	}
+
+	if password == "" {
+		return &pem.Block{Type: keyType, Bytes: keyBytes}, nil
+	} else {
+		keyPemBlock, err := pemutil.EncryptPKCS8PrivateKey(rand.Reader, keyBytes, []byte(password), x509.PEMCipherAES256)
+		if err != nil {
+			return nil, fmt.Errorf("failed to encrypt private key: %s", err)
+		}
+		return keyPemBlock, nil
+	}
 }
 
 func parsePrivateKey(keyPemBlock *pem.Block, password string) (crypto.PrivateKey, error) {
@@ -969,4 +1002,13 @@ func parsePrivateKey(keyPemBlock *pem.Block, password string) (crypto.PrivateKey
 	default:
 		return nil, fmt.Errorf("unsupported private key type: %s", keyPemBlock.Type)
 	}
+}
+
+func writeBytes(data []byte, outFileName string) (err error) {
+	if outFileName == "" {
+		_, err = os.Stdout.Write(data)
+	} else {
+		err = os.WriteFile(outFileName, data, 0600)
+	}
+	return err
 }
