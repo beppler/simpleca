@@ -32,6 +32,7 @@ func main() {
 	app := cli.NewApp()
 	app.Name = "simpleca"
 	app.Usage = "Simple Certificate Authority"
+	app.EnableBashCompletion = true
 	app.Version = version
 	app.Commands = []*cli.Command{
 		{
